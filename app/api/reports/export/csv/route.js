@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { GET as getAdminReport } from "../../../admin/route";
+import { GET as getAdminReport } from "../../admin/route";
 
 export async function GET(req) {
   try {
