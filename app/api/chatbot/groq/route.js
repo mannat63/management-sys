@@ -11,7 +11,10 @@ import Fee from "@/models/Fee";
 import Attendance from "@/models/Attendance";
 import Result from "@/models/Result";
 import Test from "@/models/Test";
-
+import User from "@/models/User";
+import Teacher from "@/models/Teacher";
+import Course from "@/models/Course";
+import Institute from "@/models/Institute";
 export async function POST(req) {
   try {
     await dbConnect();
@@ -33,8 +36,6 @@ export async function POST(req) {
     // COMPREHENSIVE RAG: Full Database Retrieval
     // ═══════════════════════════════════════════════════════════════════
     
-    const Course = mongoose.models.Course || mongoose.model("Course", new mongoose.Schema({ name: String, description: String, base_fee: Number, institute_id: mongoose.Schema.Types.ObjectId }));
-
     // 1. ALL Students with their details
     const allStudents = await Student.find({ institute_id: instId })
       .populate("user_id", "name phoneOrEmail")
