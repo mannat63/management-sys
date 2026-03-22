@@ -1,0 +1,50 @@
+import { NextResponse } from "next/server";
+import dbConnect from "@/lib/db/mongodb";
+import { requireRole } from "@/lib/auth";
+import Student from "@/models/Student";
+import User from "@/models/User";
+
+export async function PUT(req, { params }) {
+  try {
+    await dbConnect();
+    await requireRole(["ADMIN"]);
+
+    const { id } = await params;
+    const body = await req.json();
+    const { name, phoneOrEmail, batch_id, parent_name, parent_phone, admission_date } = body;
+
+    const student = await Student.findById(id);
+    if (!student) return NextResponse.json({ error: "Student not found" }, { status: 404 });
+
+    // Update the linked User record
+    if (student.user_id) {
+      await User.findByIdAndUpdate(student.user_id, { name, phoneOrEmail });
+    }
+
+    // Update the Student record
+    student.batch_id = batch_id;
+    student.parent_name = parent_name;
+    student.parent_phone = parent_phone;
+    if (admission_date) student.admission_date = new Date(admission_date);
+    await student.save();
+
+    return NextResponse.json(student);
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req, { params }) {
+  try {
+    await dbConnect();
+    await requireRole(["ADMIN"]);
+
+    const { id } = await params;
+    const student = await Student.findByIdAndDelete(id);
+    if (!student) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

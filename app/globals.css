@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #f8fafc;
+    color: #0f172a;
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.6;
+  }
+}
+
+@layer components {
+  /* ─── Card ─── */
+  .card {
+    @apply bg-white border border-slate-200/80 rounded-xl shadow-sm p-6 overflow-hidden;
+  }
+
+  /* ─── Input ─── */
+  .input-field {
+    @apply w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-800
+    placeholder:text-slate-400
+    focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500
+    transition-all duration-150;
+  }
+
+  /* ─── Buttons ─── */
+  .btn-primary {
+    @apply px-4 py-2.5 bg-teal-600 hover:bg-teal-700 active:bg-teal-800
+    text-white text-sm font-semibold rounded-lg
+    transition-all duration-150 ease-out
+    flex items-center justify-center gap-2
+    shadow-sm hover:shadow;
+  }
+  .btn-secondary {
+    @apply px-4 py-2.5 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 active:bg-slate-100
+    text-slate-700 text-sm font-semibold rounded-lg
+    transition-all duration-150 ease-out
+    flex items-center justify-center gap-2;
+  }
+  .btn-ghost {
+    @apply px-3 py-2 bg-transparent hover:bg-slate-100 active:bg-slate-200
+    text-slate-500 hover:text-slate-700 text-sm font-medium rounded-lg
+    transition-all duration-150 ease-out
+    flex items-center justify-center gap-1;
+  }
+  .btn-danger {
+    @apply px-3 py-2 bg-white border border-rose-200 hover:bg-rose-50 hover:border-rose-300
+    text-rose-600 text-sm font-semibold rounded-lg
+    transition-all duration-150 ease-out
+    flex items-center justify-center gap-1;
+  }
+
+  /* ─── Data Table ─── */
+  .data-table {
+    @apply w-full text-left border-collapse text-sm;
+  }
+  .data-table th {
+    @apply px-4 py-3 bg-slate-50/80 font-semibold text-xs text-slate-500 uppercase tracking-wider border-b border-slate-200 whitespace-nowrap;
+  }
+  .data-table td {
+    @apply px-4 py-3.5 border-b border-slate-100/80 text-slate-600;
+  }
+  .data-table tbody tr {
+    @apply hover:bg-slate-50/50 transition-colors duration-100;
+  }
+
+  /* ─── Badge ─── */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold tracking-wide;
+  }
+  .badge-indigo {
+    @apply bg-indigo-50 text-indigo-700 border border-indigo-100;
+  }
+  .badge-teal {
+    @apply bg-teal-50 text-teal-700 border border-teal-100;
+  }
+  .badge-emerald {
+    @apply bg-emerald-50 text-emerald-700 border border-emerald-100;
+  }
+  .badge-amber {
+    @apply bg-amber-50 text-amber-700 border border-amber-100;
+  }
+  .badge-rose {
+    @apply bg-rose-50 text-rose-700 border border-rose-100;
+  }
+
+  /* ─── Modal Overlay ─── */
+  .modal-overlay {
+    @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    animation: fadeIn 150ms ease-out;
+  }
+  .modal-panel {
+    @apply bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200/50 overflow-hidden;
+    animation: slideUp 200ms ease-out;
+  }
+  .modal-header {
+    @apply flex items-center justify-between px-6 py-4 border-b border-slate-100;
+  }
+  .modal-body {
+    @apply px-6 py-5;
+  }
+  .modal-footer {
+    @apply flex items-center justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100;
+  }
+
+  /* ─── Toast ─── */
+  .toast-container {
+    @apply fixed bottom-6 right-6 z-[100] flex flex-col gap-3;
+  }
+  .toast {
+    @apply flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-lg border text-sm font-medium;
+    animation: slideUp 200ms ease-out, fadeOut 300ms ease-in 2.7s forwards;
+  }
+  .toast-success {
+    @apply bg-emerald-50 border-emerald-200 text-emerald-800;
+  }
+  .toast-error {
+    @apply bg-rose-50 border-rose-200 text-rose-800;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
