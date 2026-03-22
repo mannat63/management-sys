@@ -5,6 +5,8 @@ import Fee from "@/models/Fee";
 import Student from "@/models/Student";
 import Institute from "@/models/Institute";
 import { sendEventToN8N } from "@/services/n8n";
+import Batch from "@/models/Batch";
+import User from "@/models/User";
 
 export async function GET(req) {
   try {
@@ -58,8 +60,6 @@ export async function POST(req) {
 
     // Send fee_due webhook using unified event system
     // We dynamically require models here or at the top. Let's ensure User and Batch are initialized.
-    const Batch = require("@/models/Batch").default || require("@/models/Batch");
-    const User = require("@/models/User").default || require("@/models/User");
 
     const student = await Student.findById(student_id).populate("batch_id", "name").populate("user_id", "name");
     const inst = await Institute.findById(authUser.institute_id);

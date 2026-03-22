@@ -9,6 +9,8 @@ import Student from "@/models/Student";
 import Batch from "@/models/Batch";
 import Fee from "@/models/Fee";
 import Attendance from "@/models/Attendance";
+import Result from "@/models/Result";
+import Test from "@/models/Test";
 
 export async function POST(req) {
   try {
@@ -139,9 +141,6 @@ export async function POST(req) {
       }));
 
     // 8. Recent test results
-    const Result = mongoose.models.Result || require("@/models/Result").default;
-    const Test = mongoose.models.Test || require("@/models/Test").default;
-
     const recentTests = await Test.find({ institute_id: instId })
       .sort({ date: -1 })
       .limit(5)

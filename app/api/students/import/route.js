@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/auth";
 import Student from "@/models/Student";
 import User from "@/models/User";
 import Batch from "@/models/Batch";
+import Fee from "@/models/Fee";
 
 export async function POST(req) {
   try {
@@ -108,7 +109,6 @@ export async function POST(req) {
 
         const parsedFee = parseFloat(total_fee);
         if (!isNaN(parsedFee) && parsedFee >= 0) {
-          const Fee = mongoose.models.Fee || require("@/models/Fee").default;
           await Fee.create({
             student_id: student._id,
             total_amount: parsedFee,
