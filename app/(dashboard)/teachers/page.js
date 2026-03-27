@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { GraduationCap, Plus, X, Mail, User } from "lucide-react";
 
 export default function TeachersPage() {
   const [teachers, setTeachers] = useState([]);
@@ -25,49 +26,67 @@ export default function TeachersPage() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="h-8 w-48 bg-slate-200 rounded animate-pulse" />
-        {[1, 2].map((i) => <div key={i} className="h-16 bg-slate-200 rounded-xl animate-pulse" />)}
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="h-8 w-48 animate-shimmer rounded-xl" />
+        {[1, 2].map((i) => <div key={i} className="h-20 animate-shimmer rounded-2xl" />)}
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">Teachers</h1>
-        <button onClick={() => setShowForm(!showForm)} className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700">
-          {showForm ? "Cancel" : "+ Add Teacher"}
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="page-title">Teachers</h1>
+          <p className="page-subtitle">{teachers.length} teacher{teachers.length !== 1 ? "s" : ""} on board</p>
+        </div>
+        <button onClick={() => setShowForm(!showForm)} className={`btn-primary ${showForm ? "bg-gray-500 hover:bg-gray-600 !shadow-none" : ""}`}>
+          {showForm ? <><X size={16}/> Cancel</> : <><Plus size={16}/> Add Teacher</>}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-xl p-5 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <input placeholder="Teacher Name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="border border-slate-300 rounded-lg px-3 py-2 text-sm" />
-          <input placeholder="Email / Phone" required value={form.phoneOrEmail} onChange={(e) => setForm({ ...form, phoneOrEmail: e.target.value })} className="border border-slate-300 rounded-lg px-3 py-2 text-sm" />
-          <button type="submit" className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700">Save</button>
+        <form onSubmit={handleSubmit} className="card bg-gray-50/50 grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Teacher Name</label>
+            <input placeholder="Full name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-field" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Email / Phone</label>
+            <input placeholder="Contact info" required value={form.phoneOrEmail} onChange={(e) => setForm({ ...form, phoneOrEmail: e.target.value })} className="input-field" />
+          </div>
+          <button type="submit" className="btn-primary h-[42px]">Save Teacher</button>
         </form>
       )}
 
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-600">
-            <tr>
-              <th className="text-left px-4 py-3 font-semibold">Name</th>
-              <th className="text-left px-4 py-3 font-semibold">Contact</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {teachers.map((t) => (
-              <tr key={t._id} className="hover:bg-slate-50">
-                <td className="px-4 py-3 font-medium text-slate-800">{t.user_id?.name || "—"}</td>
-                <td className="px-4 py-3 text-slate-600">{t.user_id?.phoneOrEmail || "—"}</td>
-              </tr>
-            ))}
-            {teachers.length === 0 && <tr><td colSpan={2} className="px-4 py-8 text-center text-slate-400">No teachers found</td></tr>}
-          </tbody>
-        </table>
-      </div>
+      {/* Teacher Cards Grid */}
+      {teachers.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {teachers.map((t) => (
+            <div key={t._id} className="card flex items-center gap-4 hover:-translate-y-0.5 transition-all hover:shadow-md group">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white font-bold text-lg shadow-sm group-hover:shadow-md transition-shadow flex-shrink-0">
+                {(t.user_id?.name || "T")[0].toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-gray-800 text-base">{t.user_id?.name || "—"}</div>
+                <div className="text-sm text-gray-400 flex items-center gap-1.5 mt-0.5">
+                  <Mail size={12} />
+                  {t.user_id?.phoneOrEmail || "—"}
+                </div>
+              </div>
+              <div className="badge badge-indigo">Faculty</div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="card py-16 text-center border-dashed">
+          <div className="w-14 h-14 bg-gray-100 text-gray-300 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <GraduationCap size={28} />
+          </div>
+          <h3 className="text-base font-bold text-gray-700">No teachers found</h3>
+          <p className="text-sm text-gray-500 mt-1">Add your faculty members to get started.</p>
+        </div>
+      )}
     </div>
   );
 }

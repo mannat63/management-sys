@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Layers, Clock, GraduationCap, Plus, X } from "lucide-react";
+import { Layers, Clock, GraduationCap, Plus, X, Users } from "lucide-react";
 
 export default function BatchesPage() {
   const [batches, setBatches] = useState([]);
@@ -53,76 +53,88 @@ export default function BatchesPage() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="h-8 w-48 bg-slate-200 rounded animate-pulse" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[1, 2].map((i) => <div key={i} className="h-28 bg-slate-200 rounded-xl animate-pulse" />)}
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="h-8 w-48 animate-shimmer rounded-xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {[1, 2].map((i) => <div key={i} className="h-36 animate-shimmer rounded-2xl" />)}
         </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div className="max-w-6xl mx-auto space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Batches</h1>
-          <p className="text-slate-500 text-sm mt-1">Manage class timings and assign teachers to courses.</p>
+          <h1 className="page-title">Batches</h1>
+          <p className="page-subtitle">Manage class timings and assign teachers to courses.</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className={`btn-primary ${showForm ? 'bg-slate-500 hover:bg-slate-600' : ''}`}>
-          {showForm ? <><X size={18}/> Cancel</> : <><Plus size={18}/> Add Batch</>}
+        <button onClick={() => setShowForm(!showForm)} className={`btn-primary ${showForm ? 'bg-gray-500 hover:bg-gray-600 !shadow-none' : ''}`}>
+          {showForm ? <><X size={16}/> Cancel</> : <><Plus size={16}/> Add Batch</>}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-xl p-5 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <input placeholder="Batch Name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-field" />
-          <select required value={form.course_id} onChange={(e) => setForm({ ...form, course_id: e.target.value })} className="input-field">
-            <option value="">Select Course</option>
-            {courses.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
-          </select>
-          <select required value={form.teacher_id} onChange={(e) => setForm({ ...form, teacher_id: e.target.value })} className="input-field">
-            <option value="">Select Teacher</option>
-            {teachers.map((t) => <option key={t._id} value={t._id}>{t.user_id?.name || "Teacher"}</option>)}
-          </select>
-          <div className="flex items-center gap-2">
-            <input type="time" required value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} className="input-field" />
-            <span className="text-slate-400 font-bold">to</span>
-            <input type="time" required value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className="input-field" />
+        <form onSubmit={handleSubmit} className="card bg-gray-50/50 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Batch Name</label>
+            <input placeholder="e.g. Morning Batch A" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-field" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Course</label>
+            <select required value={form.course_id} onChange={(e) => setForm({ ...form, course_id: e.target.value })} className="input-field">
+              <option value="">Select Course</option>
+              {courses.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Teacher</label>
+            <select required value={form.teacher_id} onChange={(e) => setForm({ ...form, teacher_id: e.target.value })} className="input-field">
+              <option value="">Select Teacher</option>
+              {teachers.map((t) => <option key={t._id} value={t._id}>{t.user_id?.name || "Teacher"}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Timing</label>
+            <div className="flex items-center gap-2">
+              <input type="time" required value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} className="input-field" />
+              <span className="text-gray-400 font-bold text-sm">to</span>
+              <input type="time" required value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className="input-field" />
+            </div>
           </div>
           <button type="submit" className="btn-primary sm:col-span-2 mt-2">Save Batch</button>
         </form>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {batches.map((b) => (
-          <div key={b._id} className="card hover:-translate-y-1 transition-transform cursor-pointer group p-5">
+          <div key={b._id} className="card hover:-translate-y-0.5 hover:shadow-lg transition-all group p-5">
             <div className="flex items-start gap-4 mb-5">
               <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl group-hover:bg-indigo-100 transition-colors">
-                <Layers size={24} strokeWidth={2}/>
+                <Layers size={22} strokeWidth={2}/>
               </div>
-              <div className="flex-1">
-                <div className="text-lg font-bold text-slate-800 tracking-tight leading-tight">{b.name}</div>
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{b.course_id?.name || "No Course"}</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-base font-bold text-gray-800 tracking-tight leading-tight truncate">{b.name}</div>
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">{b.course_id?.name || "No Course"}</div>
               </div>
             </div>
-            <div className="space-y-3 pt-4 border-t border-slate-100">
-              <div className="flex items-center text-sm font-medium text-slate-600">
-                <Clock size={16} className="text-slate-400 mr-3"/> {b.timing}
+            <div className="space-y-2.5 pt-4 border-t border-gray-100">
+              <div className="flex items-center text-sm font-medium text-gray-600">
+                <Clock size={15} className="text-gray-400 mr-2.5"/> {b.timing}
               </div>
-              <div className="flex items-center text-sm font-medium text-slate-600">
-                <GraduationCap size={16} className="text-slate-400 mr-3"/> {b.teacher_id?.user_id?.name || "Unassigned"}
+              <div className="flex items-center text-sm font-medium text-gray-600">
+                <GraduationCap size={15} className="text-gray-400 mr-2.5"/> {b.teacher_id?.user_id?.name || "Unassigned"}
               </div>
             </div>
           </div>
         ))}
         {batches.length === 0 && (
-          <div className="col-span-full py-12 text-center bg-slate-50 border border-slate-200 border-dashed rounded-xl">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-200 text-slate-500 mb-3">
-              <Layers size={24} />
+          <div className="col-span-full py-16 text-center border-2 border-dashed border-gray-200 rounded-2xl">
+            <div className="w-14 h-14 bg-gray-100 text-gray-300 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Layers size={28} />
             </div>
-            <h3 className="text-sm font-bold text-slate-700">No batches created</h3>
-            <p className="text-sm text-slate-500 mt-1">Get started by creating your first batch.</p>
+            <h3 className="text-base font-bold text-gray-700">No batches created</h3>
+            <p className="text-sm text-gray-500 mt-1">Create your first batch to get started.</p>
           </div>
         )}
       </div>

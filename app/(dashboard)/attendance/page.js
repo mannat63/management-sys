@@ -42,7 +42,6 @@ export default function AttendancePage() {
     ]).then(([s, a]) => {
       setStudents(Array.isArray(s) ? s : []);
       setExistingRecords(Array.isArray(a) ? a : []);
-      // Pre-fill attendance from existing records
       const map = {};
       if (Array.isArray(a)) {
         a.forEach((rec) => { map[rec.student_id?._id || rec.student_id] = rec.status; });
@@ -81,46 +80,44 @@ export default function AttendancePage() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="h-8 w-48 bg-slate-200 rounded animate-pulse" />
-        <div className="h-24 bg-slate-200 rounded-xl animate-pulse" />
-        <div className="h-64 bg-slate-200 rounded-xl animate-pulse" />
+      <div className="max-w-5xl mx-auto space-y-6">
+        <div className="h-8 w-48 animate-shimmer rounded-xl" />
+        <div className="h-24 animate-shimmer rounded-2xl" />
+        <div className="h-64 animate-shimmer rounded-2xl" />
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Attendance</h1>
-          <p className="text-sm text-slate-500 mt-1">Mark daily presence and track student records.</p>
-        </div>
+    <div className="max-w-5xl mx-auto space-y-6">
+      <div>
+        <h1 className="page-title">Attendance</h1>
+        <p className="page-subtitle">Mark daily presence and track student records.</p>
       </div>
 
-      <div className="card mb-6 bg-white">
-        <div className="flex flex-wrap gap-4 items-center">
+      <div className="card">
+        <div className="flex flex-wrap gap-4 items-end">
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Select Batch</label>
-            <select value={selectedBatch} onChange={(e) => setSelectedBatch(e.target.value)} className="input-field shadow-sm">
-              <option value="">-- Choose a Batch --</option>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Select Batch</label>
+            <select value={selectedBatch} onChange={(e) => setSelectedBatch(e.target.value)} className="input-field">
+              <option value="">— Choose a Batch —</option>
               {batches.map((b) => <option key={b._id} value={b._id}>{b.name}</option>)}
             </select>
           </div>
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Date</label>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="input-field shadow-sm" />
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Date</label>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="input-field" />
           </div>
         </div>
       </div>
 
       {!selectedBatch && (
-        <div className="card py-16 text-center bg-slate-50 border-dashed border-slate-200 shadow-none">
-          <div className="w-16 h-16 mx-auto bg-slate-200 rounded-full flex items-center justify-center text-slate-400 mb-4">
+        <div className="card py-16 text-center border-dashed border-gray-200">
+          <div className="w-16 h-16 mx-auto bg-gray-100 rounded-2xl flex items-center justify-center text-gray-300 mb-4">
             <CalendarCheck size={32} />
           </div>
-          <h3 className="text-lg font-bold text-slate-700">Select a batch to continue</h3>
-          <p className="text-sm text-slate-500 mt-1">Choose a batch and date above to mark attendance.</p>
+          <h3 className="text-base font-bold text-gray-700">Select a batch to continue</h3>
+          <p className="text-sm text-gray-500 mt-1">Choose a batch and date above to mark attendance.</p>
         </div>
       )}
 
@@ -138,15 +135,15 @@ export default function AttendancePage() {
               <tbody>
                 {students.map((s) => (
                   <tr key={s._id}>
-                    <td className="font-bold text-slate-800">{s.user_id?.name || s.parent_name}</td>
+                    <td className="font-semibold text-gray-800">{s.user_id?.name || s.parent_name}</td>
                     <td>
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border ${attendance[s._id] === "PRESENT" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100"}`}>
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border ${attendance[s._id] === "PRESENT" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-red-50 text-red-600 border-red-100"}`}>
                         {attendance[s._id] || "PRESENT"}
                       </span>
                     </td>
                     {role !== "STUDENT" && (
                     <td>
-                      <button onClick={() => toggle(s._id)} className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors bg-indigo-50 px-3 py-1 rounded flex items-center gap-1 border border-indigo-100">
+                      <button onClick={() => toggle(s._id)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors bg-indigo-50 px-3 py-1.5 rounded-lg flex items-center gap-1 border border-indigo-100 hover:bg-indigo-100">
                         {attendance[s._id] === "PRESENT" ? "Mark Absent" : "Mark Present"}
                       </button>
                     </td>
@@ -157,9 +154,9 @@ export default function AttendancePage() {
             </table>
           </div>
           {role !== "STUDENT" && (
-          <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end">
+          <div className="p-5 border-t border-gray-100 bg-gray-50/50 flex justify-end rounded-b-2xl">
             <button onClick={markAll} disabled={saving} className="btn-primary">
-              {saving ? "Saving..." : <><Save size={16}/> Save Attendance</>}
+              {saving ? "Saving..." : <><Save size={15}/> Save Attendance</>}
             </button>
           </div>
           )}
@@ -167,12 +164,12 @@ export default function AttendancePage() {
       )}
 
       {selectedBatch && students.length === 0 && (
-        <div className="card py-16 text-center bg-slate-50 border-dashed border-slate-200 shadow-none">
-          <div className="w-16 h-16 mx-auto bg-slate-200 rounded-full flex items-center justify-center text-slate-400 mb-4">
+        <div className="card py-16 text-center border-dashed border-gray-200">
+          <div className="w-16 h-16 mx-auto bg-gray-100 rounded-2xl flex items-center justify-center text-gray-300 mb-4">
             <Users size={32} />
           </div>
-          <h3 className="text-lg font-bold text-slate-700">No students found</h3>
-          <p className="text-sm text-slate-500 mt-1">There are no students enrolled in this batch yet.</p>
+          <h3 className="text-base font-bold text-gray-700">No students found</h3>
+          <p className="text-sm text-gray-500 mt-1">No students enrolled in this batch yet.</p>
         </div>
       )}
     </div>

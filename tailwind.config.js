@@ -7,7 +7,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#14b8a6", // Teal for coaching app
+        primary: "#6366f1", // Indigo for management system
       }
     },
   },

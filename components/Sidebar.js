@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, GraduationCap, BookOpen, Layers, IndianRupee, CalendarCheck, Calendar, FileText, Settings, PieChart } from "lucide-react";
+import { LayoutDashboard, Users, GraduationCap, BookOpen, Layers, IndianRupee, CalendarCheck, Calendar, FileText, Settings, PieChart, ChevronRight } from "lucide-react";
 
 const adminLinks = [
   { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
@@ -45,18 +45,23 @@ export default function Sidebar({ role, userName }) {
   const links = roleLinksMap[role] || studentLinks;
 
   return (
-    <aside className="w-64 bg-white border-r border-slate-200 flex flex-col h-screen sticky top-0 shadow-sm z-10 print:hidden">
-      <div className="p-6 border-b border-slate-100 flex-shrink-0">
+    <aside className="w-[260px] bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0 z-10 print:hidden">
+      {/* Brand */}
+      <div className="px-6 py-5 border-b border-gray-100 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 shadow-md text-white flex items-center justify-center font-extrabold tracking-wider text-sm">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 shadow-lg shadow-indigo-500/20 text-white flex items-center justify-center font-black tracking-wider text-sm">
             AC
           </div>
-          <span className="font-bold text-slate-800 text-lg tracking-tight">Alpha Coaching</span>
+          <div>
+            <span className="font-bold text-gray-900 text-base leading-tight block">Alpha Coaching</span>
+            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Management</span>
+          </div>
         </div>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto overflow-x-hidden">
-        <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-3">Menu</div>
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto overflow-x-hidden">
+        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] mb-3 px-3">Navigation</div>
         {links.map((link) => {
           const isActive = pathname === link.href;
           const { Icon } = link;
@@ -64,27 +69,37 @@ export default function Sidebar({ role, userName }) {
             <Link
               key={link.href}
               href={link.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 group relative ${
                 isActive
-                  ? "bg-teal-50 text-teal-700 shadow-sm border border-teal-100"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent"
+                  ? "bg-indigo-50 text-indigo-700 font-semibold"
+                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
               }`}
             >
-              <Icon size={18} className={isActive ? "text-teal-600" : "text-slate-400 group-hover:text-slate-600"} />
-              {link.label}
+              {isActive && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-indigo-600 rounded-r-full" />
+              )}
+              <Icon size={18} className={isActive ? "text-indigo-600" : "text-gray-400 group-hover:text-gray-600"} strokeWidth={isActive ? 2.5 : 2} />
+              <span className="flex-1">{link.label}</span>
+              {isActive && <ChevronRight size={14} className="text-indigo-400" />}
             </Link>
           );
         })}
       </nav>
 
-      <div className="p-5 border-t border-slate-100 bg-slate-50 flex-shrink-0">
-        <div className="flex flex-col gap-1">
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Logged In As</div>
-          <div className="text-sm font-semibold text-slate-800 truncate" title={userName}>{userName}</div>
-          <div className="inline-flex mt-1">
-            <span className="px-2.5 py-1 bg-white border border-slate-200 text-slate-600 text-xs font-bold rounded-md uppercase tracking-wider shadow-sm">
-              {role}
-            </span>
+      {/* User Info */}
+      <div className="p-4 border-t border-gray-100 flex-shrink-0">
+        <div className="bg-gray-50 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white text-xs font-bold shadow-sm flex-shrink-0">
+              {(userName || "U")[0].toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-gray-800 truncate" title={userName}>{userName}</div>
+              <div className="flex items-center gap-1 mt-0.5">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{role}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

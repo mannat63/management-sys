@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { Settings, Bell, CalendarCheck, Zap, Send } from "lucide-react";
 
 export default function AutomationPage() {
   const [settings, setSettings] = useState(null);
@@ -25,8 +26,7 @@ export default function AutomationPage() {
   async function sendFeeReminder() {
     setSending(true);
     try {
-      // Triggers webhook via the existing n8n service
-      const res = await fetch("/api/fees"); // Just a trigger — in production this would call the webhook
+      const res = await fetch("/api/fees");
       if (res.ok) {
         toast.success("Fee reminders sent!");
       } else {
@@ -40,58 +40,98 @@ export default function AutomationPage() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="h-8 w-48 bg-slate-200 rounded animate-pulse" />
-        <div className="h-24 bg-slate-200 rounded-xl animate-pulse" />
-        <div className="h-24 bg-slate-200 rounded-xl animate-pulse" />
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="h-9 w-56 animate-shimmer rounded-xl" />
+        <div className="h-24 animate-shimmer rounded-2xl" />
+        <div className="h-24 animate-shimmer rounded-2xl" />
+        <div className="h-32 animate-shimmer rounded-2xl" />
       </div>
     );
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-slate-800 mb-6">Automation Settings</h1>
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div>
+        <h1 className="page-title flex items-center gap-3">
+          <Settings className="text-indigo-600" size={24} />
+          Automation Settings
+        </h1>
+        <p className="page-subtitle mt-1">Configure automated notifications and workflows.</p>
+      </div>
 
-      <div className="space-y-4 max-w-xl">
-        {/* Fee Reminders Toggle */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 flex items-center justify-between">
-          <div>
-            <div className="font-semibold text-slate-800">Fee Reminders</div>
-            <div className="text-sm text-slate-500 mt-0.5">Auto-send fee due notifications via WhatsApp</div>
+      <div className="space-y-4">
+        {/* Fee Reminders */}
+        <div className="card flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+              <Bell size={20} />
+            </div>
+            <div>
+              <div className="font-semibold text-gray-800">Fee Reminders</div>
+              <div className="text-sm text-gray-500 mt-0.5">Auto-send fee due notifications via WhatsApp</div>
+            </div>
           </div>
           <button
             onClick={() => toggle("feeReminders")}
-            className={`relative w-12 h-6 rounded-full transition-colors ${settings?.feeReminders ? "bg-teal-600" : "bg-slate-300"}`}
+            className={`relative w-12 h-7 rounded-full transition-colors duration-200 flex-shrink-0 ${settings?.feeReminders ? "bg-indigo-600" : "bg-gray-200"}`}
           >
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${settings?.feeReminders ? "translate-x-6" : ""}`} />
+            <span className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${settings?.feeReminders ? "translate-x-5" : ""}`} />
           </button>
         </div>
 
-        {/* Attendance Alerts Toggle */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 flex items-center justify-between">
-          <div>
-            <div className="font-semibold text-slate-800">Attendance Alerts</div>
-            <div className="text-sm text-slate-500 mt-0.5">Notify parents when student is marked absent</div>
+        {/* Attendance Alerts */}
+        <div className="card flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+              <CalendarCheck size={20} />
+            </div>
+            <div>
+              <div className="font-semibold text-gray-800">Attendance Alerts</div>
+              <div className="text-sm text-gray-500 mt-0.5">Notify parents when student is marked absent</div>
+            </div>
           </div>
           <button
             onClick={() => toggle("attendanceAlerts")}
-            className={`relative w-12 h-6 rounded-full transition-colors ${settings?.attendanceAlerts ? "bg-teal-600" : "bg-slate-300"}`}
+            className={`relative w-12 h-7 rounded-full transition-colors duration-200 flex-shrink-0 ${settings?.attendanceAlerts ? "bg-indigo-600" : "bg-gray-200"}`}
           >
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${settings?.attendanceAlerts ? "translate-x-6" : ""}`} />
+            <span className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${settings?.attendanceAlerts ? "translate-x-5" : ""}`} />
           </button>
         </div>
 
-        {/* Manual Trigger */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
-          <div className="font-semibold text-slate-800 mb-1">Manual Actions</div>
-          <div className="text-sm text-slate-500 mb-4">Trigger one-time actions manually</div>
-          <button
-            onClick={sendFeeReminder}
-            disabled={sending}
-            className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50"
-          >
-            {sending ? "Sending..." : "📩 Send Fee Reminder Now"}
-          </button>
+        {/* Manual Actions */}
+        <div className="card">
+          <div className="flex items-center gap-4 mb-5">
+            <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+              <Zap size={20} />
+            </div>
+            <div>
+              <div className="font-semibold text-gray-800">Manual Actions</div>
+              <div className="text-sm text-gray-500 mt-0.5">Trigger one-time actions manually</div>
+            </div>
+          </div>
+          <div className="pl-16">
+            <button
+              onClick={sendFeeReminder}
+              disabled={sending}
+              className="btn-primary disabled:opacity-50"
+            >
+              <Send size={15} />
+              {sending ? "Sending..." : "Send Fee Reminder Now"}
+            </button>
+          </div>
+        </div>
+
+        {/* Info Card */}
+        <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 flex items-start gap-4">
+          <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl flex-shrink-0 mt-0.5">
+            <Zap size={16} />
+          </div>
+          <div>
+            <h4 className="font-semibold text-indigo-800 text-sm">Automation Tip</h4>
+            <p className="text-sm text-indigo-600/80 mt-1 leading-relaxed">
+              Enable both fee reminders and attendance alerts for a fully automated parent communication system. Notifications are sent via WhatsApp through the n8n integration.
+            </p>
+          </div>
         </div>
       </div>
     </div>
