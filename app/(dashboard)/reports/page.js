@@ -22,10 +22,14 @@ export default function ReportsPage() {
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    fetch("/api/me").then(r => r.json()).then(data => {
+    fetch("/api/me").then(r => r.ok ? r.json() : null).then(data => {
+      if (!data) return;
       setRole(data.role || "STUDENT");
       if (data.role === "ADMIN") {
-        fetch("/api/batches").then(r => r.json()).then(b => setBatches(b));
+        fetch("/api/batches")
+          .then(r => r.ok ? r.json() : [])
+          .then(b => setBatches(Array.isArray(b) ? b : []))
+          .catch(() => setBatches([]));
       }
       generateReport(data.role || "STUDENT");
     });
@@ -85,7 +89,7 @@ export default function ReportsPage() {
     window.print();
   }
 
-  if (!role) return <div className="p-8 text-gray-500 font-semibold">Loading...</div>;
+  if (!role) return <div className="p-8 text-gray-500 font-medium">Loading...</div>;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -106,7 +110,7 @@ export default function ReportsPage() {
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Batch</label>
               <select value={batchId} onChange={e => setBatchId(e.target.value)} className="input-field max-w-[200px]">
                 <option value="">All Batches</option>
-                {batches.map(b => (
+                {Array.isArray(batches) && batches.map(b => (
                   <option key={b._id} value={b._id}>{b.name}</option>
                 ))}
               </select>
@@ -123,10 +127,10 @@ export default function ReportsPage() {
           </button>
           {role === "ADMIN" && (
             <>
-              <button onClick={handleDownloadCSV} className="btn-secondary text-sm !bg-indigo-50 !text-indigo-600 !border-indigo-200 hover:!bg-indigo-100">
+              <button onClick={handleDownloadCSV} className="btn-secondary text-sm">
                 <FileText size={15} /> CSV
               </button>
-              <button onClick={handleSendWhatsApp} disabled={sending || !report} className="btn-primary !bg-emerald-600 hover:!bg-emerald-700 text-sm disabled:opacity-50">
+              <button onClick={handleSendWhatsApp} disabled={sending || !report} className="btn-primary !bg-emerald-700 hover:!bg-emerald-800 text-sm disabled:opacity-50">
                 {sending ? "Sending..." : <><Send size={14} /> Send to Parents</>}
               </button>
             </>
@@ -134,64 +138,79 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {loading && <div className="h-64 animate-shimmer rounded-2xl"></div>}
+      {loading && <div className="h-64 animate-shimmer rounded-lg"></div>}
 
       {/* ─── PRINT HEADER ─── */}
       <div className="hidden print:block text-center border-b-2 border-gray-800 pb-4 mb-6">
-        <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">Institute Report</h1>
-        <p className="text-sm font-semibold text-gray-600 mt-1">Period: {new Date(dateFrom).toLocaleDateString()} to {new Date(dateTo).toLocaleDateString()}</p>
+        <h1 className="text-2xl font-bold text-gray-900 uppercase tracking-wide">Institute Report</h1>
+        <p className="text-sm font-medium text-gray-600 mt-1">Period: {new Date(dateFrom).toLocaleDateString()} to {new Date(dateTo).toLocaleDateString()}</p>
       </div>
 
       {/* ─── ADMIN REPORT ─── */}
       {!loading && report && role === "ADMIN" && (
-        <div className="space-y-8">
+        <div className="space-y-6">
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="stat-card bg-indigo-50 border border-indigo-100">
-              <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Total Students</div>
-              <div className="text-3xl font-black text-indigo-700 mt-2">{report.overview?.total_students || 0}</div>
+            <div className="stat-card bg-white border border-gray-200">
+              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Total Students</div>
+              <div className="text-2xl font-bold text-gray-900 mt-2">{report.overview?.total_students || 0}</div>
             </div>
-            <div className="stat-card bg-emerald-50 border border-emerald-100">
-              <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Revenue Collected</div>
-              <div className="text-3xl font-black text-emerald-700 mt-2">₹{(report.overview?.total_revenue_collected || 0).toLocaleString()}</div>
+            <div className="stat-card bg-white border border-gray-200">
+              <div className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">Revenue Collected</div>
+              <div className="text-2xl font-bold text-gray-900 mt-2">₹{(report.overview?.total_revenue_collected || 0).toLocaleString()}</div>
             </div>
-            <div className="stat-card bg-red-50 border border-red-100">
-              <div className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Pending Dues</div>
-              <div className="text-3xl font-black text-red-700 mt-2">₹{(report.overview?.pending_fees || 0).toLocaleString()}</div>
+            <div className="stat-card bg-white border border-gray-200">
+              <div className="text-[10px] font-semibold text-red-600 uppercase tracking-wider">Pending Dues</div>
+              <div className="text-2xl font-bold text-red-600 mt-2">₹{(report.overview?.pending_fees || 0).toLocaleString()}</div>
             </div>
-            <div className="stat-card bg-blue-50 border border-blue-100">
-              <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Avg Attendance</div>
-              <div className="text-3xl font-black text-blue-700 mt-2">{report.overview?.avg_attendance}%</div>
+            <div className="stat-card bg-white border border-gray-200">
+              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Avg Attendance</div>
+              <div className="text-2xl font-bold text-gray-900 mt-2">{report.overview?.avg_attendance}%</div>
             </div>
           </div>
 
           {/* Insights */}
-          <div className="card bg-gradient-to-r from-gray-900 to-gray-800 text-white border-0 shadow-xl p-6 relative overflow-hidden">
+          <div className="card bg-slate-800 text-white border-0 p-5 relative overflow-hidden">
              <div className="relative z-10">
-               <h2 className="text-base font-bold tracking-wide flex items-center gap-2 mb-4 text-emerald-400">
-                 <TrendingUp size={18} /> AI Insights
+               <h2 className="text-sm font-semibold tracking-wide flex items-center gap-2 mb-3 text-emerald-400 uppercase">
+                 <TrendingUp size={15} /> Performance Summary
                </h2>
-               <ul className="space-y-3 font-medium text-sm text-gray-300">
+               <ul className="space-y-2 font-medium text-sm text-gray-300">
                  <li className="flex items-center gap-2">
                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                   Administered <strong>{report.overview?.tests_conducted || 0}</strong> tests during this period.
+                   Administered <strong className="text-white">{report.overview?.tests_conducted || 0}</strong> tests in this period.
                  </li>
-                 <li className="flex items-center gap-2">
-                   <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
-                   <strong>{report.students.filter(s => s.fees.due > 0).length}</strong> students have pending fees.
-                 </li>
-                 <li className="flex items-center gap-2">
-                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
-                   Top performer: <strong>{report.students[0]?.tests?.taken > 0 ? report.students[0].student.name : "N/A"}</strong> ({report.students[0]?.tests?.percentage || 0}% avg).
-                 </li>
+                 {report.overview?.top_performer && (
+                   <li className="flex items-center gap-2">
+                     <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                     Overall topper: <strong className="text-white">{report.overview.top_performer.name}</strong> ({report.overview.top_performer.score}% avg).
+                   </li>
+                 )}
+                 {report.overview?.batch_toppers?.length > 0 && (
+                   <li className="flex flex-col gap-1.5 items-start">
+                     <div className="flex items-center gap-2 mt-1">
+                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                       <span className="text-gray-400 text-xs">Batch Toppers:</span>
+                     </div>
+                     <div className="flex flex-wrap gap-2 ml-3.5 mt-1">
+                                               {Array.isArray(report.overview?.batch_toppers) && report.overview.batch_toppers.map((tp, i) => (
+
+                         <div key={i} className="px-2 py-0.5 bg-white/10 rounded flex items-center gap-2 border border-white/5 shadow-sm">
+                            <span className="text-[10px] text-gray-500 font-bold uppercase">{tp.batch}:</span>
+                            <span className="text-xs font-bold text-emerald-400">{tp.name} ({tp.score}%)</span>
+                         </div>
+                       ))}
+                     </div>
+                   </li>
+                 )}
                </ul>
              </div>
           </div>
 
           {/* Student Table */}
           <div className="card !p-0 overflow-hidden">
-            <div className="p-5 border-b border-gray-100 bg-gray-50/50">
-              <h2 className="font-bold text-gray-800">Detailed Student Aggregation</h2>
+            <div className="p-4 border-b border-gray-200 bg-gray-50">
+              <h2 className="font-semibold text-gray-800 text-sm">Detailed Student Aggregation</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="data-table !text-sm">
@@ -206,16 +225,16 @@ export default function ReportsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {report.students.map((row, idx) => (
+                  {Array.isArray(report?.students) && report.students.map((row, idx) => (
                     <tr key={idx}>
                       <td className="font-semibold text-gray-700">{row.student.name}</td>
                       <td className="text-gray-500">{row.student.batch}</td>
-                      <td className="text-right font-mono font-semibold text-gray-600">{row.attendance.percentage}%</td>
-                      <td className="text-right font-mono font-semibold text-indigo-600">{row.tests.percentage}%</td>
-                      <td className="text-right font-bold text-gray-400">
+                      <td className="text-right font-mono font-medium text-gray-600">{row.attendance.percentage}%</td>
+                      <td className="text-right font-mono font-medium text-slate-700">{row.tests.percentage}%</td>
+                      <td className="text-right font-medium text-gray-400">
                         {row.tests.rank !== "N/A" ? `#${row.tests.rank}` : "-"}
                       </td>
-                      <td className={`text-right font-mono font-semibold ${row.fees.due > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                      <td className={`text-right font-mono font-medium ${row.fees.due > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
                         ₹{row.fees.due.toLocaleString()}
                       </td>
                     </tr>
@@ -231,53 +250,50 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {/* ─── STUDENT REPORT ─── */}
+      {/* ─── STUDENT REPORT CARD ─── */}
       {!loading && report && role === "STUDENT" && (
-        <div className="space-y-6">
+        <div className="space-y-5">
           
           {/* Header Card */}
-          <div className="bg-white border-2 border-gray-900 rounded-2xl p-6 sm:p-8 shadow-[6px_6px_0px_#1e293b] relative overflow-hidden">
+          <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 relative overflow-hidden">
              <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
-                   <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tighter uppercase">{report.institute?.name || "Institute"}</h1>
-                   <h2 className="text-lg font-bold text-indigo-600 mt-1 uppercase tracking-widest leading-none">Official Report Card</h2>
+                   <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{report.institute?.name || "Institute"}</h1>
+                   <h2 className="text-sm font-semibold text-slate-600 mt-0.5 uppercase tracking-wider">Official Report Card</h2>
                 </div>
-                <div className="text-right text-xs font-semibold text-gray-500 border border-gray-200 px-3 py-1.5 rounded-xl">
+                <div className="text-xs font-medium text-gray-500 border border-gray-200 px-3 py-1.5 rounded-md bg-gray-50">
                    {new Date(dateFrom).toLocaleDateString()} — {new Date(dateTo).toLocaleDateString()}
                 </div>
              </div>
 
-             <div className="mt-8 grid grid-cols-2 gap-4 border-t-2 border-gray-100 pt-6">
+             <div className="mt-6 grid grid-cols-2 gap-4 border-t border-gray-200 pt-5">
                 <div>
-                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Student Name</div>
-                  <div className="text-xl font-bold text-gray-800">{report.student?.name}</div>
+                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Student Name</div>
+                  <div className="text-lg font-semibold text-gray-800 mt-0.5">{report.student?.name}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Class / Batch</div>
-                  <div className="text-xl font-bold text-gray-800">{report.student?.batch}</div>
+                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Class / Batch</div>
+                  <div className="text-lg font-semibold text-gray-800 mt-0.5">{report.student?.batch}</div>
                 </div>
              </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Attendance */}
             <div className="card">
-               <h3 className="text-base font-bold mb-4 flex items-center gap-2 text-gray-800"><Calendar size={18} className="text-blue-500"/> Attendance Record</h3>
-               <div className="flex items-center gap-6 mb-6">
-                 <div className="relative w-24 h-24 flex-shrink-0 flex items-center justify-center rounded-full border-4 border-gray-100 overflow-hidden">
-                    <div className="absolute inset-0 bg-blue-500" style={{ clipPath: report.attendance?.percentage > 50 ? 'polygon(50% 50%, 50% 0, 100% 0, 100% 100%, 0 100%, 0 50%)' : 'polygon(50% 50%, 50% 0, 100% 0, 100% 50%)', opacity: 0.15 }}></div>
-                    <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center z-10">
-                       <span className="text-xl font-black text-blue-600">{report.attendance?.percentage}%</span>
-                    </div>
+               <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-gray-800"><Calendar size={16} className="text-slate-500"/> Attendance Record</h3>
+               <div className="flex items-center gap-6 mb-4">
+                 <div className="relative w-20 h-20 flex-shrink-0 flex items-center justify-center rounded-full border-[3px] border-gray-200 overflow-hidden bg-gray-50">
+                    <span className="text-lg font-bold text-slate-700">{report.attendance?.percentage}%</span>
                  </div>
-                 <div className="grid grid-cols-2 gap-3 flex-1">
-                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                      <div className="text-[10px] font-bold text-gray-400 uppercase">Classes</div>
-                      <div className="text-lg font-bold text-gray-800 mt-1">{report.attendance?.total_days}</div>
+                 <div className="grid grid-cols-2 gap-2.5 flex-1">
+                    <div className="bg-gray-50 p-2.5 rounded-md border border-gray-100">
+                      <div className="text-[10px] font-semibold text-gray-400 uppercase">Classes</div>
+                      <div className="text-base font-bold text-gray-800 mt-0.5">{report.attendance?.total_days}</div>
                     </div>
-                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                      <div className="text-[10px] font-bold text-emerald-500 uppercase">Present</div>
-                      <div className="text-lg font-bold text-gray-800 mt-1">{report.attendance?.present}</div>
+                    <div className="bg-gray-50 p-2.5 rounded-md border border-gray-100">
+                      <div className="text-[10px] font-semibold text-emerald-600 uppercase">Present</div>
+                      <div className="text-base font-bold text-gray-800 mt-0.5">{report.attendance?.present}</div>
                     </div>
                  </div>
                </div>
@@ -285,19 +301,19 @@ export default function ReportsPage() {
 
             {/* Fees */}
             <div className="card">
-               <h3 className="text-base font-bold mb-4 flex items-center gap-2 text-gray-800"><Wallet size={18} className="text-amber-500"/> Financial Summary</h3>
-               <div className="space-y-3">
-                 <div className="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
-                    <span className="text-sm font-semibold text-gray-500">Total Fees</span>
-                    <span className="font-mono font-bold text-gray-800">₹{report.fees?.total.toLocaleString()}</span>
+               <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-gray-800"><Wallet size={16} className="text-slate-500"/> Financial Summary</h3>
+               <div className="space-y-2">
+                 <div className="flex justify-between items-center bg-gray-50 p-3 rounded-md border border-gray-100">
+                    <span className="text-sm font-medium text-gray-500">Total Fees</span>
+                    <span className="font-mono font-semibold text-gray-800">₹{report.fees?.total.toLocaleString()}</span>
                  </div>
-                 <div className="flex justify-between items-center bg-emerald-50 p-3 rounded-xl border border-emerald-100">
-                    <span className="text-sm font-semibold text-emerald-600">Amount Paid</span>
-                    <span className="font-mono font-bold text-emerald-700">₹{report.fees?.paid.toLocaleString()}</span>
+                 <div className="flex justify-between items-center bg-emerald-50 p-3 rounded-md border border-emerald-100">
+                    <span className="text-sm font-medium text-emerald-700">Amount Paid</span>
+                    <span className="font-mono font-semibold text-emerald-800">₹{report.fees?.paid.toLocaleString()}</span>
                  </div>
-                 <div className={`flex justify-between items-center p-3 rounded-xl border ${report.fees?.due > 0 ? "bg-red-50 border-red-100" : "bg-gray-50 border-gray-100"}`}>
-                    <span className={`text-sm font-semibold ${report.fees?.due > 0 ? "text-red-600" : "text-gray-500"}`}>Outstanding</span>
-                    <span className={`font-mono font-black ${report.fees?.due > 0 ? "text-red-700" : "text-gray-500"}`}>₹{report.fees?.due.toLocaleString()}</span>
+                 <div className={`flex justify-between items-center p-3 rounded-md border ${report.fees?.due > 0 ? "bg-red-50 border-red-100" : "bg-gray-50 border-gray-100"}`}>
+                    <span className={`text-sm font-medium ${report.fees?.due > 0 ? "text-red-700" : "text-gray-500"}`}>Outstanding</span>
+                    <span className={`font-mono font-bold ${report.fees?.due > 0 ? "text-red-700" : "text-gray-500"}`}>₹{report.fees?.due.toLocaleString()}</span>
                  </div>
                </div>
             </div>
@@ -305,41 +321,41 @@ export default function ReportsPage() {
 
           {/* Academic */}
           <div className="card">
-            <div className="flex justify-between items-end mb-6 border-b border-gray-100 pb-4">
-              <h3 className="text-base font-bold flex items-center gap-2 text-gray-800"><FileText size={18} className="text-indigo-500"/> Academic Performance</h3>
+            <div className="flex justify-between items-end mb-5 border-b border-gray-200 pb-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2 text-gray-800"><FileText size={16} className="text-slate-500"/> Academic Performance</h3>
               <div className="text-right">
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Overall Average</div>
-                <div className="text-2xl font-black text-indigo-600">{report.tests?.percentage}%</div>
+                <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Overall Average</div>
+                <div className="text-xl font-bold text-slate-700">{report.tests?.percentage}%</div>
               </div>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b-2 border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                    <th className="py-3 px-2">Test Name</th>
-                    <th className="py-3 px-2">Date</th>
-                    <th className="py-3 px-2 text-right">Score</th>
-                    <th className="py-3 px-2 text-right">Rank</th>
+                  <tr className="border-b border-gray-200 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                    <th className="py-2.5 px-2">Test Name</th>
+                    <th className="py-2.5 px-2">Date</th>
+                    <th className="py-2.5 px-2 text-right">Score</th>
+                    <th className="py-2.5 px-2 text-right">Rank</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y text-sm">
-                  {report.tests?.details.length > 0 ? report.tests.details.map((t, i) => (
+                <tbody className="divide-y divide-gray-100 text-sm">
+                  {Array.isArray(report.tests?.details) && report.tests.details.length > 0 ? report.tests.details.map((t, i) => (
                     <tr key={i} className="hover:bg-gray-50">
-                      <td className="py-3 px-2 font-semibold text-gray-700">{t.test_name}</td>
+                      <td className="py-3 px-2 font-medium text-gray-700">{t.test_name}</td>
                       <td className="py-3 px-2 text-gray-500">{new Date(t.date).toLocaleDateString()}</td>
-                      <td className="py-3 px-2 text-right font-mono font-semibold text-indigo-600">{t.marks} / {t.total_marks} ({t.percentage}%)</td>
-                      <td className="py-3 px-2 text-right font-bold text-gray-400 text-lg">#{t.rank}</td>
+                      <td className="py-3 px-2 text-right font-mono font-medium text-slate-700">{t.marks} / {t.total_marks} ({t.percentage}%)</td>
+                      <td className="py-3 px-2 text-right font-semibold text-gray-400 text-base">#{t.rank}</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={4} className="py-10 text-center text-gray-400 font-semibold italic">No tests recorded in this period.</td></tr>
+                    <tr><td colSpan={4} className="py-10 text-center text-gray-400 font-medium">No tests recorded in this period.</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
           </div>
           
-          <div className="hidden print:block mt-12 text-center text-xs font-semibold text-gray-300">
+          <div className="hidden print:block mt-8 text-center text-xs font-medium text-gray-400">
              Official computer-generated record for {report.student?.name}
           </div>
 

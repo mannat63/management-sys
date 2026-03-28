@@ -12,4 +12,8 @@ const StudentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Compound indexes for common query patterns
+StudentSchema.index({ institute_id: 1, batch_id: 1 });
+StudentSchema.index({ institute_id: 1, user_id: 1 }, { unique: true });
+
 export default mongoose.models.Student || mongoose.model("Student", StudentSchema);

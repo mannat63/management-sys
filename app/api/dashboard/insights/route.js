@@ -134,10 +134,36 @@ export async function GET(req) {
 
     const testAlert = testDrops.length > 0 ? testDrops : null;
 
+    // 4. Top Performer of Each Batch
+    const topPerformers = [];
+    for (const bId in testsByBatch) {
+      if (testsByBatch[bId].length > 0) {
+        const batchResults = await Result.aggregate([
+          { $match: { student_id: { $in: await Student.find({ batch_id: bId }).distinct("_id") } } },
+          { $lookup: { from: "tests", localField: "test_id", foreignField: "_id", as: "testInfo" } },
+          { $unwind: "$testInfo" },
+          { $project: { student_id: 1, percentage: { $multiply: [{ $divide: ["$marks", "$testInfo.total_marks"] }, 100] } } },
+          { $group: { _id: "$student_id", avg: { $avg: "$percentage" } } },
+          { $sort: { avg: -1 } },
+          { $limit: 1 }
+        ]);
+
+        if (batchResults.length > 0) {
+          const topOne = await Student.findById(batchResults[0]._id).populate("user_id", "name").lean();
+          topPerformers.push({
+            batch_name: batchNameMap[bId],
+            student_name: topOne?.user_id?.name || "Unknown",
+            score: batchResults[0].avg.toFixed(1)
+          });
+        }
+      }
+    }
+
     return NextResponse.json({
       feeAlert,
       attendanceAlert,
-      testAlert
+      testAlert,
+      topPerformers: topPerformers.length > 0 ? topPerformers : null
     });
 
   } catch (error) {

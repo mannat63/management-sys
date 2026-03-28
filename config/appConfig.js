@@ -7,6 +7,7 @@
 export const ROLE_MAP = {
   "campervictor52@gmail.com": "ADMIN",
   "mannatgoyal27102005@gmail.com": "TEACHER",
+  "coachman9606@gmail.com": "STUDENT",
   "hackareg07@gmail.com": "STUDENT",
 };
 

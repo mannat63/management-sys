@@ -7,6 +7,8 @@ import Batch from "@/models/Batch";
 import Fee from "@/models/Fee";
 import Attendance from "@/models/Attendance";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     await dbConnect();
@@ -14,74 +16,150 @@ export async function GET() {
     const iid = authUser.institute_id;
 
     if (authUser.role === "ADMIN") {
-      // Correct for India Timezone (+5:30)
+      // IST midnight for today's attendance lookup
       const now = new Date();
       const istOffset = 5.5 * 60 * 60 * 1000;
       const todayUTC = new Date(now.getTime() + istOffset);
       todayUTC.setUTCHours(0, 0, 0, 0);
 
-      const [totalStudents, fees, todayAttendance] = await Promise.all([
+      // Run all aggregations in parallel — no in-memory reduce on whole collection
+      const [
+        totalStudents,
+        feeAgg,
+        attendanceAgg,
+      ] = await Promise.all([
         Student.countDocuments({ institute_id: iid }),
-        Fee.find({ institute_id: iid }),
-        Attendance.find({ institute_id: iid, date: todayUTC }),
+
+        // Single aggregation for all fee metrics
+        Fee.aggregate([
+          { $match: { institute_id: iid } },
+          {
+            $group: {
+              _id: null,
+              totalFees: { $sum: "$total_amount" },
+              collectedFees: { $sum: "$paid_amount" },
+              pendingFees: {
+                $sum: {
+                  $cond: [
+                    {
+                      $and: [
+                        { $ne: ["$status", "PAID"] },
+                        { $lte: ["$due_date", now] },
+                      ],
+                    },
+                    "$due_amount",
+                    0,
+                  ],
+                },
+              },
+            },
+          },
+        ]),
+
+        // Single aggregation for today's attendance — count present/absent
+        Attendance.aggregate([
+          { $match: { institute_id: iid, date: todayUTC } },
+          {
+            $group: {
+              _id: "$student_id",
+              // take latest record if duplicates exist
+              status: { $last: "$status" },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              presentToday: {
+                $sum: { $cond: [{ $eq: ["$status", "PRESENT"] }, 1, 0] },
+              },
+              absentToday: {
+                $sum: { $cond: [{ $eq: ["$status", "ABSENT"] }, 1, 0] },
+              },
+            },
+          },
+        ]),
       ]);
 
-      const totalFees = fees.reduce((sum, f) => sum + f.total_amount, 0);
-      const collectedFees = fees.reduce((sum, f) => sum + f.paid_amount, 0);
-      const pendingFees = totalFees - collectedFees;
-
-      const presentToday = todayAttendance.filter((a) => a.status === "PRESENT").length;
-      const absentToday = todayAttendance.filter((a) => a.status === "ABSENT").length;
+      const fees = feeAgg[0] || { totalFees: 0, collectedFees: 0, pendingFees: 0 };
+      const att = attendanceAgg[0] || { presentToday: 0, absentToday: 0 };
 
       return NextResponse.json({
         totalStudents,
-        totalFees,
-        collectedFees,
-        pendingFees,
-        presentToday,
-        absentToday,
-        role: "ADMIN"
+        totalFees: fees.totalFees,
+        collectedFees: fees.collectedFees,
+        pendingFees: fees.pendingFees,
+        presentToday: att.presentToday,
+        absentToday: att.absentToday,
+        role: "ADMIN",
       });
     }
 
     if (authUser.role === "TEACHER") {
-      const teacher = await Teacher.findOne({ user_id: authUser._id });
-      if (!teacher) return NextResponse.json({ batchesCount: 0, studentCount: 0, role: "TEACHER" });
+      const teacher = await Teacher.findOne(
+        { user_id: authUser._id },
+        { _id: 1 }
+      ).lean();
+      if (!teacher)
+        return NextResponse.json({ batchesCount: 0, studentCount: 0, role: "TEACHER" });
 
-      const batches = await Batch.find({ teacher_id: teacher._id }).select("_id");
-      const batchIds = batches.map(b => b._id);
-      
-      const studentCount = await Student.countDocuments({ batch_id: { $in: batchIds } });
+      const [batches, studentCount] = await Promise.all([
+        Batch.find({ teacher_id: teacher._id }, { _id: 1 }).lean(),
+        Student.countDocuments({ batch_id: { $in: [] } }), // filled below
+      ]);
+
+      const batchIds = batches.map((b) => b._id);
+      const sc = await Student.countDocuments({ batch_id: { $in: batchIds } });
 
       return NextResponse.json({
         batchesCount: batches.length,
-        studentCount,
-        role: "TEACHER"
+        studentCount: sc,
+        role: "TEACHER",
       });
     }
 
     if (authUser.role === "STUDENT") {
-      const student = await Student.findOne({ user_id: authUser._id });
-      if (!student) return NextResponse.json({ pendingFees: 0, presentCount: 0, totalAttendanceDays: 0, role: "STUDENT" });
+      const student = await Student.findOne(
+        { user_id: authUser._id },
+        { _id: 1 }
+      ).lean();
+      if (!student)
+        return NextResponse.json({
+          pendingFees: 0,
+          presentCount: 0,
+          totalAttendanceDays: 0,
+          role: "STUDENT",
+        });
 
-      const [myFees, attendances] = await Promise.all([
-        Fee.find({ student_id: student._id }),
-        Attendance.find({ student_id: student._id })
+      const [feeAgg, attAgg] = await Promise.all([
+        Fee.aggregate([
+          { $match: { student_id: student._id } },
+          { $group: { _id: null, pending: { $sum: "$due_amount" } } },
+        ]),
+        Attendance.aggregate([
+          { $match: { student_id: student._id } },
+          {
+            $group: {
+              _id: null,
+              total: { $sum: 1 },
+              present: {
+                $sum: { $cond: [{ $eq: ["$status", "PRESENT"] }, 1, 0] },
+              },
+            },
+          },
+        ]),
       ]);
 
-      const pendingFees = myFees.reduce((sum, f) => sum + (f.total_amount - f.paid_amount), 0);
-      const presents = attendances.filter((a) => a.status === "PRESENT").length;
-
       return NextResponse.json({
-        pendingFees,
-        presentCount: presents,
-        totalAttendanceDays: attendances.length,
-        role: "STUDENT"
+        pendingFees: feeAgg[0]?.pending || 0,
+        presentCount: attAgg[0]?.present || 0,
+        totalAttendanceDays: attAgg[0]?.total || 0,
+        role: "STUDENT",
       });
     }
 
     return NextResponse.json({ role: "UNKNOWN" });
   } catch (error) {
+    console.error("Dashboard API Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

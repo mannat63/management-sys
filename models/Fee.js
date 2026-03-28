@@ -13,7 +13,6 @@ const FeeSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Auto-calculate status before saving
 FeeSchema.pre("save", function () {
   this.due_amount = this.total_amount - this.paid_amount;
   if (this.due_amount <= 0) {
@@ -25,5 +24,10 @@ FeeSchema.pre("save", function () {
     this.status = "DUE";
   }
 });
+
+// Compound indexes for common query patterns
+FeeSchema.index({ institute_id: 1, status: 1 });
+FeeSchema.index({ institute_id: 1, student_id: 1 });
+FeeSchema.index({ institute_id: 1, due_date: 1, status: 1 });
 
 export default mongoose.models.Fee || mongoose.model("Fee", FeeSchema);

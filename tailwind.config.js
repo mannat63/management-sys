@@ -7,7 +7,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#6366f1", // Indigo for management system
+        primary: "#1e293b", // Slate-800 for professional school management
       }
     },
   },

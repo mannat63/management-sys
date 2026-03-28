@@ -11,102 +11,163 @@ import Fee from "@/models/Fee";
 import Attendance from "@/models/Attendance";
 import Test from "@/models/Test";
 import Result from "@/models/Result";
+import Payment from "@/models/Payment";
 import { INSTITUTE_NAME } from "@/config/appConfig";
 
-export async function POST() {
+export async function POST(req) {
   try {
     await dbConnect();
     const authUser = await requireRole(["ADMIN"]);
     const iid = authUser.institute_id;
+    
+    // Check if the user wants to force reset (we can just assume yes from the prompt context, but let's always clear for a clean slate)
+    await Student.deleteMany({ institute_id: iid });
+    await Teacher.deleteMany({ institute_id: iid });
+    await Course.deleteMany({ institute_id: iid });
+    await Batch.deleteMany({ institute_id: iid });
+    await Fee.deleteMany({ institute_id: iid });
+    await Attendance.deleteMany({ institute_id: iid });
+    await Test.deleteMany({ institute_id: iid });
+    await Result.deleteMany({ institute_id: iid });
+    await Payment.deleteMany({ institute_id: iid });
+    
+    // Also delete any users that aren't the ADMIN so we get a completely fresh user base
+    await User.deleteMany({ institute_id: iid, role: { $ne: "ADMIN" } });
 
-    // Check if already seeded
-    const existingStudents = await Student.countDocuments({ institute_id: iid });
-    if (existingStudents > 0) {
-      return NextResponse.json({ message: "Data already seeded!", count: existingStudents });
-    }
+    // 1. Teachers
+    const t1User = await User.create({ name: "Priya Sharma", phoneOrEmail: "mannatgoyal27102005@gmail.com", role: "TEACHER", institute_id: iid });
+    const t2User = await User.create({ name: "Amit Kumar", phoneOrEmail: "teacher2@gmail.com", role: "TEACHER", institute_id: iid });
+    
+    const t1 = await Teacher.create({ user_id: t1User._id, institute_id: iid });
+    const t2 = await Teacher.create({ user_id: t2User._id, institute_id: iid });
 
-    // Ensure teacher user exists
-    let teacherUser = await User.findOne({ phoneOrEmail: "teacher@gmail.com", institute_id: iid });
-    if (!teacherUser) {
-      teacherUser = await User.create({ name: "Priya Sharma", phoneOrEmail: "teacher@gmail.com", role: "TEACHER", institute_id: iid });
-    }
+    // 2. Courses
+    const courseJEE = await Course.create({ name: "JEE Advanced", institute_id: iid });
+    const courseNEET = await Course.create({ name: "NEET Medical", institute_id: iid });
 
-    // Teacher profile
-    let teacher = await Teacher.findOne({ user_id: teacherUser._id });
-    if (!teacher) {
-      teacher = await Teacher.create({ user_id: teacherUser._id, institute_id: iid });
-    }
+    // 3. Batches
+    const batchJEE = await Batch.create({ name: "JEE Top Batch", course_id: courseJEE._id, teacher_id: t1._id, timing: "8:00 AM - 10:00 AM", institute_id: iid });
+    const batchNEET = await Batch.create({ name: "NEET Morning", course_id: courseNEET._id, teacher_id: t2._id, timing: "10:00 AM - 12:00 PM", institute_id: iid });
 
-    // Courses
-    const courseJEE = await Course.create({ name: "JEE", institute_id: iid });
-    const course10 = await Course.create({ name: "Class 10", institute_id: iid });
-
-    // Batches
-    const batchJEE = await Batch.create({ name: "JEE Morning", course_id: courseJEE._id, teacher_id: teacher._id, timing: "8:00 AM - 10:00 AM", institute_id: iid });
-    const batch10 = await Batch.create({ name: "10th Evening", course_id: course10._id, teacher_id: teacher._id, timing: "4:00 PM - 6:00 PM", institute_id: iid });
-
-    // Students
+    // 4. Students (Exactly 10)
     const studentData = [
-      { name: "Aarav Patel", phone: "aarav@test.com", parent: "Suresh Patel", parentPhone: "+919111111111", batch: batchJEE._id },
-      { name: "Diya Singh", phone: "diya@test.com", parent: "Ramesh Singh", parentPhone: "+919222222222", batch: batchJEE._id },
-      { name: "Vihaan Gupta", phone: "vihaan@test.com", parent: "Anil Gupta", parentPhone: "+919333333333", batch: batchJEE._id },
-      { name: "Ananya Rao", phone: "ananya@test.com", parent: "Kiran Rao", parentPhone: "+919444444444", batch: batch10._id },
-      { name: "Rohan Verma", phone: "rohan@test.com", parent: "Deepak Verma", parentPhone: "+919555555555", batch: batch10._id },
+      { name: "Arjun Bansal", phone: "coachman9606@gmail.com", parent: "Rakesh Bansal", parentPhone: "+911000000001", batch: batchJEE._id },
+      { name: "Kavya Singh", phone: "kavya@test.com", parent: "Vikram Singh", parentPhone: "+911000000002", batch: batchJEE._id },
+      { name: "Vihaan Iyer", phone: "vihaan@test.com", parent: "Rajesh Iyer", parentPhone: "+911000000003", batch: batchJEE._id },
+      { name: "Ananya Sharma", phone: "ananya@test.com", parent: "Deepak Sharma", parentPhone: "+911000000004", batch: batchJEE._id },
+      { name: "Kabir Dubey", phone: "kabir@test.com", parent: "Amit Dubey", parentPhone: "+911000000005", batch: batchJEE._id },
+      { name: "Mira Patel", phone: "mira@test.com", parent: "Suresh Patel", parentPhone: "+911000000006", batch: batchNEET._id },
+      { name: "Vivaan Joshi", phone: "vivaan@test.com", parent: "Karan Joshi", parentPhone: "+911000000007", batch: batchNEET._id },
+      { name: "Sia Gupta", phone: "sia@test.com", parent: "Ravi Gupta", parentPhone: "+911000000008", batch: batchNEET._id },
+      { name: "Reyansh Reddy", phone: "reyansh@test.com", parent: "Raman Reddy", parentPhone: "+911000000009", batch: batchNEET._id },
+      { name: "Zara Khan", phone: "zara@test.com", parent: "Imran Khan", parentPhone: "+911000000010", batch: batchNEET._id }
     ];
 
     const students = [];
     for (const s of studentData) {
+      const admissionDate = new Date();
+      admissionDate.setDate(admissionDate.getDate() - Math.floor(Math.random() * 60) - 10); // Between 10 and 70 days ago
+      
       const u = await User.create({ name: s.name, phoneOrEmail: s.phone, role: "STUDENT", institute_id: iid });
-      const student = await Student.create({ user_id: u._id, batch_id: s.batch, parent_name: s.parent, parent_phone: s.parentPhone, institute_id: iid });
-      students.push(student);
+      const doc = await Student.create({ user_id: u._id, batch_id: s.batch, parent_name: s.parent, parent_phone: s.parentPhone, admission_date: admissionDate, institute_id: iid });
+      students.push(doc);
     }
 
-    // Fees (mix of PAID, PARTIAL, DUE)
-    const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-    const feeAmounts = [
-      { paid: 5000, total: 5000 },  // PAID
-      { paid: 3000, total: 5000 },  // PARTIAL
-      { paid: 0, total: 5000 },     // DUE
-      { paid: 5000, total: 5000 },  // PAID
-      { paid: 1000, total: 5000 },  // PARTIAL
-    ];
+    // 5. Fees (A mix of PAID, PARTIAL, DUE)
     for (let i = 0; i < students.length; i++) {
+      const student = students[i];
+      const admissionDate = new Date(student.admission_date);
+      
+      const dueDate = new Date(admissionDate);
+      dueDate.setDate(dueDate.getDate() + 30); // Fees must be paid within 30 days of admission
+
+      const total = 50000;
+      let paid = 0;
+      if (i % 3 === 0) paid = 50000; // Fully paid
+      else if (i % 3 === 1) paid = 25000; // Partial
+      else paid = 0; // Unpaid
+
       const f = new Fee({
-        student_id: students[i]._id,
-        total_amount: feeAmounts[i].total,
-        paid_amount: feeAmounts[i].paid,
-        due_amount: feeAmounts[i].total - feeAmounts[i].paid,
+        student_id: student._id,
+        total_amount: total,
+        paid_amount: paid,
+        due_amount: total - paid,
         due_date: dueDate,
         institute_id: iid,
       });
-      await f.save(); // triggers pre-save hook for status
-    }
+      await f.save();
 
-    // Attendance (last 5 days)
-    const today = new Date();
-    for (let d = 1; d <= 5; d++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - d);
-      for (const student of students) {
-        await Attendance.create({
+      if (paid > 0) {
+        const paymentDate = new Date(admissionDate);
+        paymentDate.setDate(paymentDate.getDate() + Math.floor(Math.random() * 15) + 1); // Paid within a couple of weeks of admission
+        
+        await Payment.create({
+          fee_id: f._id,
           student_id: student._id,
-          batch_id: student.batch_id,
-          date,
-          status: Math.random() > 0.2 ? "PRESENT" : "ABSENT",
+          amount: paid,
+          method: "CASH",
+          status: "CONFIRMED",
           institute_id: iid,
+          createdAt: paymentDate, // Backdate the payment so it shows up correctly in historical reports
         });
       }
     }
 
-    // Test + Results
-    const test = await Test.create({ name: "Mid-Term Physics", batch_id: batchJEE._id, date: new Date(), total_marks: 100, institute_id: iid });
-    const jeeStudents = students.filter((s) => s.batch_id.toString() === batchJEE._id.toString());
-    for (const student of jeeStudents) {
-      await Result.create({ test_id: test._id, student_id: student._id, marks: Math.floor(Math.random() * 40 + 60), institute_id: iid });
+    // 6. Attendance (from admission date to today)
+    const now = new Date();
+    now.setUTCHours(0, 0, 0, 0);
+
+    for (let i = 0; i < students.length; i++) {
+        const student = students[i];
+        const isAbsentArjun = student.parent_name === "Rakesh Bansal";
+        
+        const start = new Date(student.admission_date);
+        start.setUTCHours(0, 0, 0, 0);
+
+        const daysDiff = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+        
+        // Cap to 70 days just in case, but randomization is 10-70 anyway
+        const cappedDays = Math.min(daysDiff, 70);
+
+        for (let d = 0; d <= cappedDays; d++) {
+            const date = new Date(start);
+            date.setDate(date.getDate() + d);
+            date.setUTCHours(0, 0, 0, 0);
+
+            // Arjun is notoriously absent
+            let isAbsent = isAbsentArjun ? true : (Math.random() > 0.8);
+
+            await Attendance.create({
+                student_id: student._id,
+                batch_id: student.batch_id,
+                date,
+                status: isAbsent ? "ABSENT" : "PRESENT",
+                institute_id: iid,
+                marked_by: authUser._id,
+            });
+        }
     }
 
-    return NextResponse.json({ message: "Seed complete!", students: students.length }, { status: 201 });
+    // 7. Tests & Results
+    const testJEE = await Test.create({ name: "JEE Mock Test 1", batch_id: batchJEE._id, date: new Date(), total_marks: 300, institute_id: iid });
+    const testNEET = await Test.create({ name: "NEET Mock Test 1", batch_id: batchNEET._id, date: new Date(), total_marks: 720, institute_id: iid });
+
+    for (let i = 0; i < students.length; i++) {
+      const student = students[i];
+      const isJEE = student.batch_id.toString() === batchJEE._id.toString();
+      const mark = isJEE ? Math.floor(Math.random() * 200 + 40) : Math.floor(Math.random() * 500 + 100);
+      
+      await Result.create({ 
+        test_id: isJEE ? testJEE._id : testNEET._id, 
+        student_id: student._id, 
+        marks: mark, 
+        institute_id: iid 
+      });
+    }
+
+    return NextResponse.json({ message: "System wiped and successfully reseeded with exactly 10 students and clean data!", students: students.length }, { status: 201 });
   } catch (error) {
+    console.error("Seed error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

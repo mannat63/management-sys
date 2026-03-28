@@ -13,18 +13,20 @@ export async function PUT(req, { params }) {
 
     const { id } = await params;
 
-    const payment = await Payment.findOne({ _id: id, institute_id: authUser.institute_id });
-    if (!payment) return NextResponse.json({ error: "Payment not found" }, { status: 404 });
-    if (payment.status === "CONFIRMED") return NextResponse.json({ error: "Already confirmed" }, { status: 400 });
+    const payment = await Payment.findOneAndUpdate(
+      { _id: id, institute_id: authUser.institute_id, status: { $ne: "CONFIRMED" } },
+      { $set: { status: "CONFIRMED" } },
+      { new: true }
+    );
+    if (!payment) {
+      const existing = await Payment.findOne({ _id: id, institute_id: authUser.institute_id });
+      if (!existing) return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+      if (existing.status === "CONFIRMED") return NextResponse.json({ error: "Already confirmed" }, { status: 400 });
+    }
 
     const fee = await Fee.findOne({ _id: payment.fee_id, institute_id: authUser.institute_id });
     if (!fee) return NextResponse.json({ error: "Fee not found" }, { status: 404 });
 
-    // Confirm Payment
-    payment.status = "CONFIRMED";
-    await payment.save();
-
-    // Update Fee
     fee.paid_amount = (Number(fee.paid_amount) || 0) + Number(payment.amount);
     await fee.save(); // pre-save hook handles due_amount & status
 

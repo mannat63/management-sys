@@ -29,7 +29,7 @@ export default function CoursesPage() {
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="h-8 w-48 animate-shimmer rounded-xl" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {[1, 2, 3].map((i) => <div key={i} className="h-44 animate-shimmer rounded-2xl" />)}
+          {[1, 2, 3].map((i) => <div key={i} className="h-44 animate-shimmer rounded-lg" />)}
         </div>
       </div>
     );
@@ -72,12 +72,12 @@ export default function CoursesPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {courses.map((c) => (
-          <div key={c._id} className="card hover:-translate-y-0.5 hover:shadow-lg transition-all group flex flex-col">
+          <div key={c._id} className="card hover:shadow-md transition-all group flex flex-col">
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl group-hover:bg-indigo-100 transition-colors">
+              <div className="p-2.5 bg-slate-100 text-slate-600 rounded-md group-hover:bg-slate-200 transition-colors">
                 <BookOpen size={20} />
               </div>
-              <div className="px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold text-gray-600 flex items-center gap-1">
+              <div className="px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 flex items-center gap-1">
                 <IndianRupee size={11} />
                 {c.base_fee?.toLocaleString() || "0"}
               </div>
@@ -89,8 +89,8 @@ export default function CoursesPage() {
           </div>
         ))}
         {courses.length === 0 && (
-          <div className="col-span-full py-16 text-center border-2 border-dashed border-gray-200 rounded-2xl">
-            <div className="w-14 h-14 bg-gray-100 text-gray-300 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <div className="col-span-full py-16 text-center border-2 border-dashed border-gray-200 rounded-lg">
+            <div className="w-12 h-12 bg-gray-100 text-gray-300 rounded-lg flex items-center justify-center mx-auto mb-3">
               <BookOpen size={28} />
             </div>
             <h3 className="text-base font-bold text-gray-700">No courses created</h3>

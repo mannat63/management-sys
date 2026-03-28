@@ -79,28 +79,28 @@ export default function AdminChatbot({ role }) {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-2xl shadow-lg shadow-indigo-600/25 transition-all hover:scale-105 active:scale-95 flex items-center justify-center group"
+          className="bg-slate-800 hover:bg-slate-900 text-white p-3.5 rounded-lg shadow-md transition-all hover:scale-105 active:scale-95 flex items-center justify-center group"
         >
-          <Sparkles size={22} className="group-hover:rotate-12 transition-transform" />
+          <Sparkles size={20} className="group-hover:rotate-12 transition-transform" />
         </button>
       )}
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="w-80 sm:w-96 h-[520px] bg-white rounded-2xl shadow-2xl shadow-gray-200/60 flex flex-col overflow-hidden border border-gray-200" style={{ animation: 'slideUp 250ms cubic-bezier(0.16, 1, 0.3, 1)' }}>
+        <div className="w-80 sm:w-96 h-[520px] bg-white rounded-lg shadow-xl flex flex-col overflow-hidden border border-gray-200" style={{ animation: 'slideUp 200ms cubic-bezier(0.16, 1, 0.3, 1)' }}>
           {/* Header */}
-          <div className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-5 py-4 flex items-center justify-between shadow-sm z-10">
+          <div className="bg-slate-800 text-white px-5 py-3.5 flex items-center justify-between z-10">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-white/15 rounded-xl flex items-center justify-center text-white backdrop-blur-sm">
-                <Bot size={18} />
+              <div className="w-8 h-8 bg-white/10 rounded-md flex items-center justify-center text-white">
+                <Bot size={16} />
               </div>
               <div>
-                <h3 className="font-bold text-sm">AI Assistant</h3>
-                <p className="text-[10px] text-indigo-200 uppercase tracking-widest font-semibold">Connected • Live Data</p>
+                <h3 className="font-semibold text-sm">AI Assistant</h3>
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Connected • Live Data</p>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="text-indigo-200 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors">
-              <X size={18} />
+            <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white p-1.5 rounded-md hover:bg-white/10 transition-colors">
+              <X size={16} />
             </button>
           </div>
 
@@ -108,10 +108,10 @@ export default function AdminChatbot({ role }) {
           <div className="flex-1 overflow-y-auto p-4 bg-gray-50/50 space-y-4">
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex gap-2.5 max-w-[88%] ${msg.sender === "user" ? "ml-auto flex-row-reverse" : ""}`}>
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${msg.sender === "user" ? "bg-gray-200 text-gray-600" : "bg-indigo-100 text-indigo-600"}`}>
+                <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 ${msg.sender === "user" ? "bg-gray-200 text-gray-600" : "bg-slate-100 text-slate-600"}`}>
                   {msg.sender === "user" ? <User size={13} /> : <Bot size={13} />}
                 </div>
-                <div className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed ${msg.sender === "user" ? "bg-indigo-600 text-white rounded-tr-md" : "bg-white text-gray-700 rounded-tl-md border border-gray-100 shadow-sm"}`}>
+                <div className={`px-3.5 py-2.5 rounded-lg text-[13px] leading-relaxed ${msg.sender === "user" ? "bg-slate-800 text-white rounded-tr-sm" : "bg-white text-gray-700 rounded-tl-sm border border-gray-200 shadow-sm"}`}>
                   <div className="prose prose-sm prose-p:leading-relaxed prose-pre:bg-gray-50 prose-pre:text-gray-700 max-w-none">
                     <ReactMarkdown>
                       {msg.text}
@@ -122,11 +122,11 @@ export default function AdminChatbot({ role }) {
             ))}
             {loading && (
               <div className="flex gap-2.5 max-w-[88%]">
-                <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center flex-shrink-0">
                   <Bot size={13} />
                 </div>
-                <div className="px-3.5 py-2.5 bg-white text-gray-500 rounded-2xl rounded-tl-md text-[13px] border border-gray-100 flex items-center gap-2 shadow-sm">
-                  <Loader2 size={14} className="animate-spin text-indigo-500" /> Thinking...
+                <div className="px-3.5 py-2.5 bg-white text-gray-500 rounded-lg rounded-tl-sm text-[13px] border border-gray-200 flex items-center gap-2 shadow-sm">
+                  <Loader2 size={14} className="animate-spin text-slate-500" /> Thinking...
                 </div>
               </div>
             )}
@@ -142,7 +142,7 @@ export default function AdminChatbot({ role }) {
                   key={faq.label}
                   onClick={() => handleFAQ(faq)}
                   disabled={loading}
-                  className="whitespace-nowrap text-[11px] py-1.5 px-3 bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 rounded-full text-gray-600 hover:text-indigo-600 font-semibold transition-all disabled:opacity-50"
+                  className="whitespace-nowrap text-[11px] py-1.5 px-3 bg-gray-50 hover:bg-slate-100 border border-gray-200 hover:border-slate-300 rounded-md text-gray-600 hover:text-slate-800 font-medium transition-all disabled:opacity-50"
                 >
                   {faq.label}
                 </button>
@@ -158,12 +158,12 @@ export default function AdminChatbot({ role }) {
               onChange={e => setInputText(e.target.value)}
               disabled={loading}
               placeholder="Ask about your data..." 
-              className="flex-1 text-[13px] bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500/15 focus:border-indigo-400 transition-all disabled:opacity-50"
+              className="flex-1 text-[13px] bg-gray-50 border border-gray-200 rounded-md px-4 py-2.5 outline-none focus:ring-2 focus:ring-slate-500/15 focus:border-slate-400 transition-all disabled:opacity-50"
             />
             <button 
               type="submit" 
               disabled={loading || !inputText.trim()}
-              className="w-9 h-9 flex items-center justify-center shrink-0 bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 transition-all"
+              className="w-9 h-9 flex items-center justify-center shrink-0 bg-slate-800 text-white rounded-md shadow-sm hover:bg-slate-900 disabled:opacity-50 disabled:hover:bg-slate-800 transition-all"
             >
               <Send size={14} />
             </button>

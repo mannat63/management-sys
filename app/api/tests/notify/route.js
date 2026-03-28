@@ -10,7 +10,7 @@ import { sendEventToN8N } from "@/services/n8n";
 export async function POST(req) {
   try {
     await dbConnect();
-    await requireRole(["ADMIN"]);
+    await requireRole(["ADMIN", "TEACHER"]);
 
     const body = await req.json();
     const { test_id } = body;

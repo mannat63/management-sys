@@ -123,48 +123,94 @@ export async function POST(req) {
     const todayAttendance = await Attendance.find({
       institute_id: instId,
       date: todayUTC
-    }).populate({ path: "student_id", populate: { path: "user_id", select: "name" } })
-      .populate("batch_id", "name")
+    }).populate({
+        path: "student_id",
+        select: "user_id batch_id",
+        populate: [
+          { path: "user_id", select: "name" },
+          { path: "batch_id", select: "name" }
+        ]
+      })
       .lean();
 
     const todayAbsent = todayAttendance
-      .filter(a => a.status === "ABSENT")
+      .filter(a => a.status === "ABSENT" && a.student_id != null)
       .map(a => ({
         name: a.student_id?.user_id?.name || "Unknown",
-        batch: a.batch_id?.name || "Unknown"
+        batch: a.student_id?.batch_id?.name || "Unknown"
       }));
 
     const todayPresent = todayAttendance
-      .filter(a => a.status === "PRESENT")
+      .filter(a => a.status === "PRESENT" && a.student_id != null)
       .map(a => ({
         name: a.student_id?.user_id?.name || "Unknown",
-        batch: a.batch_id?.name || "Unknown"
+        batch: a.student_id?.batch_id?.name || "Unknown"
       }));
 
-    // 8. Recent test results
-    const recentTests = await Test.find({ institute_id: instId })
-      .sort({ date: -1 })
-      .limit(5)
-      .populate("batch_id", "name")
-      .lean();
+    // 8. Recent test results — single aggregation with $lookup (eliminates N+1)
+    const recentTestDetails = await Test.aggregate([
+      { $match: { institute_id: instId } },
+      { $sort: { date: -1 } },
+      { $limit: 5 },
+      {
+        $lookup: {
+          from: "results",
+          localField: "_id",
+          foreignField: "test_id",
+          as: "results",
+        },
+      },
+      {
+        $lookup: {
+          from: "batches",
+          localField: "batch_id",
+          foreignField: "_id",
+          as: "batchInfo",
+        },
+      },
+      { $unwind: { path: "$batchInfo", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "students",
+          localField: "results.student_id",
+          foreignField: "_id",
+          as: "studentDocs",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "studentDocs.user_id",
+          foreignField: "_id",
+          as: "userDocs",
+        },
+      },
+      { $sort: { date: 1 } },
+    ]);
 
-    const recentTestDetails = [];
-    for (const t of recentTests) {
-      const testResults = await Result.find({ test_id: t._id })
-        .populate({ path: "student_id", populate: { path: "user_id", select: "name" } })
-        .lean();
-      recentTestDetails.push({
+    // Map into the expected shape
+    const formattedTests = recentTestDetails.map((t) => {
+      const userMap = {};
+      (t.userDocs || []).forEach((u) => { userMap[u._id.toString()] = u.name; });
+      const studentMap = {};
+      (t.studentDocs || []).forEach((s) => { studentMap[s._id.toString()] = s.user_id?.toString(); });
+
+      return {
         test_name: t.name,
-        batch: t.batch_id?.name || "Unknown",
+        batch: t.batchInfo?.name || "Unknown",
         date: new Date(t.date).toISOString().split("T")[0],
         total_marks: t.total_marks,
-        scores: testResults.map(r => ({
-          student: r.student_id?.user_id?.name || "Unknown",
-          marks: r.marks,
-          percentage: ((r.marks / t.total_marks) * 100).toFixed(1)
-        }))
-      });
-    }
+        scores: (t.results || []).map((r) => {
+          const sId = r.student_id?.toString();
+          const uId = studentMap[sId];
+          return {
+            student: (uId && userMap[uId]) || "Unknown",
+            marks: r.marks,
+            percentage: ((r.marks / t.total_marks) * 100).toFixed(1),
+          };
+        }),
+      };
+    });
 
     // 9. Summary stats
     const totalStudents = studentsFull.length;
@@ -192,7 +238,7 @@ export async function POST(req) {
         absent_students: todayAbsent,
         present_students: todayPresent
       },
-      recent_tests: recentTestDetails
+      recent_tests: formattedTests
     };
 
     const systemPrompt = `You are the Admin Assistant for a Coaching Institute management system. You have COMPLETE access to the institute's real-time database snapshot below.

@@ -11,4 +11,7 @@ const TestSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+TestSchema.index({ institute_id: 1, batch_id: 1 });
+TestSchema.index({ institute_id: 1, date: -1 });
+
 export default mongoose.models.Test || mongoose.model("Test", TestSchema);

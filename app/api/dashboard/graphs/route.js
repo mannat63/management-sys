@@ -1,114 +1,165 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongodb";
-import { getAuthUser, requireRole } from "@/lib/auth";
+import { requireRole } from "@/lib/auth";
 import Payment from "@/models/Payment";
 import Attendance from "@/models/Attendance";
 import Fee from "@/models/Fee";
 import Test from "@/models/Test";
 import Result from "@/models/Result";
 
-export async function GET(req) {
+export const dynamic = "force-dynamic";
+
+export async function GET() {
   try {
     await dbConnect();
     const authUser = await requireRole(["ADMIN"]);
     const iid = authUser.institute_id;
-    
-    // Default timeframe: last 30 days
+
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - 30);
-    
-    // Seed charts with a clean line of zeros for the last 30 days so UI never breaks
+
+    const todayStart = new Date();
+    todayStart.setUTCHours(0,0,0,0);
+
+    // ── All 4 data sources fetched in parallel via aggregation ──
+    const [paymentAgg, attendanceAgg, feeAgg, testPerfAgg] = await Promise.all([
+
+      // 1. Revenue per day (last 30 days)
+      Payment.aggregate([
+        { $match: { institute_id: iid, createdAt: { $gte: startDate, $lte: endDate } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            amount: { $sum: "$amount" },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
+
+      // 2. Attendance % per day (aggregate, not full fetch)
+      Attendance.aggregate([
+        { $match: { institute_id: iid, date: { $gte: startDate, $lte: endDate } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+            total: { $sum: 1 },
+            present: { $sum: { $cond: [{ $eq: ["$status", "PRESENT"] }, 1, 0] } },
+          },
+        },
+        {
+          $project: {
+            presentPct: {
+              $cond: [
+                { $gt: ["$total", 0] },
+                { $round: [{ $multiply: [{ $divide: ["$present", "$total"] }, 100] }, 0] },
+                0,
+              ],
+            },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
+
+      // 3. Fee totals (single $group, no full collection fetch)
+      Fee.aggregate([
+        { $match: { institute_id: iid } },
+        {
+          $group: {
+            _id: null,
+            collected: { $sum: "$paid_amount" },
+            pending: { 
+              $sum: {
+                $cond: [ { $lt: ["$due_date", todayStart] }, "$due_amount", 0 ]
+              }
+            },
+          },
+        },
+      ]),
+
+      // 4. Test performance — single aggregate with $lookup to avoid N+1
+      Test.aggregate([
+        { $match: { institute_id: iid } },
+        { $sort: { date: -1 } },
+        { $limit: 5 },
+        {
+          $lookup: {
+            from: "results",
+            localField: "_id",
+            foreignField: "test_id",
+            as: "results",
+          },
+        },
+        {
+          $project: {
+            name: 1,
+            total_marks: 1,
+            date: 1,
+            count: { $size: "$results" },
+            sumMarks: { $sum: "$results.marks" },
+          },
+        },
+        {
+          $project: {
+            name: 1,
+            date: 1,
+            avgScore: {
+              $cond: [
+                { $and: [{ $gt: ["$count", 0] }, { $gt: ["$total_marks", 0] }] },
+                {
+                  $round: [
+                    { $multiply: [{ $divide: ["$sumMarks", { $multiply: ["$count", "$total_marks"] }] }, 100] },
+                    0,
+                  ],
+                },
+                0,
+              ],
+            },
+          },
+        },
+        { $sort: { date: 1 } }, // chronological for chart
+      ]),
+    ]);
+
+    // ── Build revenue map (seed zeros for all 30 days) ──
     const revMap = {};
-    const attMap = {};
     for (let i = 0; i <= 30; i++) {
-       const d = new Date();
-       d.setDate(d.getDate() - i);
-       const dStr = d.toISOString().split('T')[0];
-       revMap[dStr] = 0;
-       attMap[dStr] = { present: 0, total: 0 };
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      revMap[d.toISOString().split("T")[0]] = 0;
     }
-    
-    // 1. Revenue Data
-    const payments = await Payment.find({
-      institute_id: iid,
-      createdAt: { $gte: startDate, $lte: endDate }
-    }).lean();
-    
-    payments.forEach(p => {
-       const dStr = new Date(p.createdAt).toISOString().split('T')[0];
-       if (revMap[dStr] !== undefined) {
-         revMap[dStr] += p.amount || 0;
-       }
+    paymentAgg.forEach((p) => {
+      if (revMap[p._id] !== undefined) revMap[p._id] = p.amount;
     });
-    
-    // Build array sorted by date
-    const revenueData = Object.keys(revMap).sort().map(d => ({
-       date: new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-       amount: revMap[d]
+    const revenueData = Object.keys(revMap)
+      .sort()
+      .map((d) => ({
+        date: new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+        amount: revMap[d],
+      }));
+
+    // ── Attendance trend ──
+    const attendanceData = attendanceAgg.map((a) => ({
+      date: new Date(a._id).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+      presentPct: a.presentPct,
     }));
 
-    // 2. Attendance Data
-    const attendances = await Attendance.find({
-      institute_id: iid,
-      date: { $gte: startDate, $lte: endDate }
-    }).lean();
-    
-    attendances.forEach(a => {
-       const dStr = new Date(a.date).toISOString().split('T')[0];
-       if (attMap[dStr]) {
-          attMap[dStr].total += 1;
-          if (a.status === "PRESENT") attMap[dStr].present += 1;
-       }
-    });
-    
-    const attendanceData = Object.keys(attMap).sort().map(d => {
-       const stats = attMap[d];
-       const presentPct = stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0;
-       return {
-         date: new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-         presentPct
-       };
-    });
-
-    // 3. Fee Status Data
-    const fees = await Fee.find({ institute_id: iid }).lean();
-    let paidSum = 0;
-    let pendingSum = 0;
-    fees.forEach(f => {
-       paidSum += (f.paid_amount || 0);
-       pendingSum += Math.max(0, (f.total_amount || 0) - (f.paid_amount || 0));
-    });
+    // ── Fee status ──
+    const fees = feeAgg[0] || { collected: 0, pending: 0 };
     const feeData = [
-       { name: "Collected", value: paidSum, fill: "#10b981" }, // Emerald 500
-       { name: "Pending", value: pendingSum, fill: "#f43f5e" } // Rose 500
+      { name: "Collected", value: fees.collected, fill: "#10b981" },
+      { name: "Pending", value: fees.pending, fill: "#f43f5e" },
     ];
 
-    // 4. Test Performance Data
-    const tests = await Test.find({ institute_id: iid }).sort({ date: -1 }).limit(5).lean();
-    const testData = [];
-    
-    // Go in chronological order for graph (left to right)
-    for (const test of tests.reverse()) {
-       const results = await Result.find({ test_id: test._id }).lean();
-       let avg = 0;
-       if (results.length > 0 && test.total_marks > 0) {
-          const sum = results.reduce((acc, r) => acc + (r.marks || 0), 0);
-          avg = Math.round((sum / (results.length * test.total_marks)) * 100);
-       }
-       testData.push({
-          name: test.name.substring(0, 10) + (test.name.length > 10 ? '...' : ''),
-          avgScore: avg
-       });
-    }
+    // ── Test performance ──
+    const testData = testPerfAgg.map((t) => ({ name: t.name, avgScore: t.avgScore }));
 
     return NextResponse.json({
-       revenue: revenueData,
-       attendance: attendanceData,
-       feesObj: feeData,
-       tests: testData
+      revenue: revenueData,
+      attendance: attendanceData,
+      feesObj: feeData,
+      tests: testData,
     });
-    
   } catch (error) {
     console.error("Graphs API Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

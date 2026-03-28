@@ -142,7 +142,8 @@ export default function AttendanceCalendarPage() {
     }
     
     setSaving(false);
-    toast("Attendance successfully saved!");
+    toast.success("Attendance successfully saved!");
+    setPanelDate(null);
   }
 
   async function notifyParents() {
@@ -170,8 +171,8 @@ export default function AttendanceCalendarPage() {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="h-9 w-64 animate-shimmer rounded-xl" />
-        <div className="h-96 animate-shimmer rounded-2xl" />
+        <div className="h-9 w-64 animate-shimmer rounded-lg" />
+        <div className="h-96 animate-shimmer rounded-lg" />
       </div>
     );
   }
@@ -184,7 +185,7 @@ export default function AttendanceCalendarPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="page-title flex items-center gap-3">
-            <CalendarIcon className="text-indigo-600" size={28} />
+            <CalendarIcon className="text-slate-600" size={26} />
             Attendance Calendar
           </h1>
           <p className="page-subtitle mt-2">View and modify attendance for any past or present date.</p>
@@ -206,13 +207,13 @@ export default function AttendanceCalendarPage() {
             {monthNames[month]} <span className="text-gray-400 font-semibold">{year}</span>
           </h2>
           <div className="flex items-center gap-2">
-            <button onClick={prevMonth} className="p-2.5 rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors">
+            <button onClick={prevMonth} className="p-2.5 rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-slate-700 transition-colors">
               <ChevronLeft size={18} />
             </button>
-            <button onClick={() => setCurrentDate(new Date())} className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-indigo-600 transition-colors">
+            <button onClick={() => setCurrentDate(new Date())} className="px-4 py-2.5 rounded-md border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-slate-700 transition-colors">
               Today
             </button>
-            <button onClick={nextMonth} className="p-2.5 rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors">
+            <button onClick={nextMonth} className="p-2.5 rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-slate-700 transition-colors">
               <ChevronRight size={18} />
             </button>
           </div>
@@ -239,16 +240,16 @@ export default function AttendanceCalendarPage() {
                 <div
                   key={dayDate.toISOString()}
                   onClick={() => openPanel(dayDate)}
-                  className={`relative h-24 rounded-xl border p-3 flex flex-col cursor-pointer transition-all duration-200 group
-                    ${isToday ? 'border-indigo-400 bg-indigo-50/30 shadow-sm shadow-indigo-100' : 'border-gray-200 bg-white hover:border-indigo-300 hover:shadow-md'}
+                  className={`relative h-24 rounded-lg border p-3 flex flex-col cursor-pointer transition-all duration-200 group
+                    ${isToday ? 'border-slate-400 bg-slate-50 shadow-sm shadow-slate-100' : 'border-gray-200 bg-white hover:border-slate-300 hover:shadow-md'}
                   `}
                 >
-                  <div className={`text-sm font-bold ${isToday ? 'text-indigo-600' : 'text-gray-700 group-hover:text-indigo-600'}`}>
+                  <div className={`text-sm font-bold ${isToday ? 'text-slate-700' : 'text-gray-700 group-hover:text-slate-700'}`}>
                     {dayDate.getDate()}
                   </div>
                   
                   {isToday && (
-                    <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                    <div className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-slate-500 animate-pulse" />
                   )}
 
                   <div className="mt-auto">
@@ -272,7 +273,7 @@ export default function AttendanceCalendarPage() {
         <div className="overflow-y-auto max-h-[60vh]">
           {students.length === 0 ? (
             <div className="py-16 text-center bg-gray-50">
-              <div className="w-16 h-16 mx-auto bg-gray-100 rounded-2xl flex items-center justify-center text-gray-300 mb-4">
+              <div className="w-14 h-14 mx-auto bg-gray-100 rounded-lg flex items-center justify-center text-gray-300 mb-4">
                 <CalendarIcon size={32} />
               </div>
               <h3 className="text-base font-bold text-gray-700">No students found</h3>
@@ -292,21 +293,21 @@ export default function AttendanceCalendarPage() {
                   <tr key={s._id} className={idx % 2 === 1 ? "bg-gray-50/30" : "bg-white"}>
                     <td className="px-6 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-violet-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm flex-shrink-0">
+                        <div className="w-8 h-8 bg-slate-700 rounded-md flex items-center justify-center text-white text-xs font-bold shadow-sm flex-shrink-0">
                           {(s.user_id?.name || s.parent_name || "?")[0].toUpperCase()}
                         </div>
                         <span className="font-semibold text-gray-800">{s.user_id?.name || s.parent_name}</span>
                       </div>
                     </td>
                     <td className="px-6 py-3.5">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border ${attendance[s._id] === "PRESENT" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-red-50 text-red-600 border-red-100"}`}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold border ${attendance[s._id] === "PRESENT" ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-red-50 text-red-600 border-red-200"}`}>
                         {attendance[s._id] || "PRESENT"}
                       </span>
                     </td>
                     <td className="px-6 py-3.5 text-right">
                       <button
                         onClick={() => toggleStatus(s._id)}
-                        className={`text-xs font-semibold px-3.5 py-2 rounded-xl border transition-all ${
+                        className={`text-xs font-medium px-3.5 py-2 rounded-md border transition-all ${
                           attendance[s._id] === "PRESENT"
                             ? "bg-white text-red-600 border-gray-200 hover:border-red-200 hover:bg-red-50"
                             : "bg-white text-emerald-600 border-gray-200 hover:border-emerald-200 hover:bg-emerald-50"
@@ -333,7 +334,11 @@ export default function AttendanceCalendarPage() {
             </button>
             <div className="flex gap-3">
               <button onClick={() => setPanelDate(null)} className="btn-secondary w-full sm:w-auto px-6">
-                Done
+                Cancel
+              </button>
+              <button onClick={savePanel} disabled={saving} className="btn-primary w-full sm:w-auto px-6 flex items-center justify-center gap-2">
+                <CheckCircle size={14} />
+                {saving ? "Saving..." : "Save Daily Attendance"}
               </button>
             </div>
           </div>

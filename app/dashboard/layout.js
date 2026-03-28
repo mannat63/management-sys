@@ -14,23 +14,24 @@ export default async function DashboardLayout({ children }) {
   const user = await getAuthUser();
 
   return (
-    <div className="flex h-screen bg-[#f7f8fc] overflow-hidden">
+    <div className="flex h-screen bg-[#f5f6f8] overflow-hidden">
       <Sidebar role={user.role} userName={user.name} />
       <div className="flex-1 flex flex-col h-full overflow-auto relative">
         <Toaster position="top-right" toastOptions={{
           style: {
-            borderRadius: '14px',
+            borderRadius: '8px',
             padding: '12px 16px',
             fontSize: '13px',
-            fontWeight: '600',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+            fontWeight: '500',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+            color: '#1f2937',
           },
         }} />
-        <header className="sticky top-0 z-20 bg-white/70 backdrop-blur-xl border-b border-gray-100 px-8 py-3 flex items-center justify-between">
+        <header className="sticky top-0 z-20 bg-white border-b border-gray-200 px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Live Dashboard</span>
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Live Dashboard</span>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-xs font-medium text-gray-400">

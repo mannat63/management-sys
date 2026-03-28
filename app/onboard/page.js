@@ -43,8 +43,8 @@ export default function OnboardPage() {
     <div className="min-h-screen bg-[#f7f8fc] flex flex-col items-center justify-center p-6 relative">
       {/* Background Decoration */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-10 right-20 w-80 h-80 bg-indigo-100/30 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-10 left-20 w-96 h-96 bg-violet-100/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-10 right-20 w-80 h-80 bg-slate-100/30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-10 left-20 w-96 h-96 bg-gray-100/20 rounded-full blur-3xl"></div>
       </div>
 
       <div className="absolute top-6 right-6">
@@ -54,7 +54,7 @@ export default function OnboardPage() {
       <div className="max-w-md w-full bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-gray-200/70 p-8 relative z-10">
         {/* Brand */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white flex items-center justify-center font-black text-sm shadow-md shadow-indigo-500/20">
+          <div className="w-10 h-10 rounded-md bg-slate-800 text-white flex items-center justify-center font-bold text-sm tracking-wide">
             AC
           </div>
           <div>

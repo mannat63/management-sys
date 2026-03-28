@@ -12,7 +12,7 @@ import { sendEventToN8N } from "@/services/n8n";
 export async function POST(req) {
   try {
     await dbConnect();
-    const authUser = await requireRole(["ADMIN"]);
+    const authUser = await requireRole(["ADMIN", "TEACHER"]);
 
     const body = await req.json();
     const { fees } = body; // Array of fee objects: { _id, student_id, name, parent_phone, due_amount, days_overdue }

@@ -40,8 +40,23 @@ export async function DELETE(req, { params }) {
     await requireRole(["ADMIN"]);
 
     const { id } = await params;
-    const student = await Student.findByIdAndDelete(id);
+    const student = await Student.findById(id);
     if (!student) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    // Cascade delete related records
+    const { default: Fee } = await import("@/models/Fee");
+    const { default: Attendance } = await import("@/models/Attendance");
+    const { default: Result } = await import("@/models/Result");
+    const { default: Payment } = await import("@/models/Payment");
+
+    await Promise.all([
+      User.findByIdAndDelete(student.user_id),
+      Fee.deleteMany({ student_id: id }),
+      Attendance.deleteMany({ student_id: id }),
+      Result.deleteMany({ student_id: id }),
+      Payment.deleteMany({ student_id: id }),
+      Student.findByIdAndDelete(id)
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (error) {

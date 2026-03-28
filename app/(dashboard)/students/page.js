@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Users, Upload, Plus, X, Download, Pencil, Trash2, CheckCircle, AlertCircle, Search } from "lucide-react";
+import { Users, Upload, Plus, X, Download, Pencil, Trash2, CheckCircle, AlertCircle, Search, User, Bell, BarChart3, Activity } from "lucide-react";
 
 // ─── Toast Component ───
 function Toast({ toasts }) {
@@ -25,8 +25,8 @@ function Modal({ open, onClose, title, children }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2 className="text-lg font-bold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="btn-ghost !p-1.5 rounded-full"><X size={18} /></button>
+          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
+          <button onClick={onClose} className="btn-ghost !p-1.5 rounded-md"><X size={18} /></button>
         </div>
         {children}
       </div>
@@ -41,10 +41,10 @@ function DeleteModal({ open, onClose, onConfirm, name, deleting }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-panel max-w-sm" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 py-8 text-center">
-          <div className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Trash2 size={22} />
+          <div className="w-12 h-12 bg-red-50 text-red-500 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <Trash2 size={20} />
           </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Student</h3>
+          <h3 className="text-base font-semibold text-gray-900 mb-2">Delete Student</h3>
           <p className="text-sm text-gray-500">
             Remove <span className="font-semibold text-gray-700">{name}</span>? This cannot be undone.
           </p>
@@ -66,10 +66,13 @@ export default function StudentsPage() {
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState("");
   const [search, setSearch] = useState("");
+  const [filterBatch, setFilterBatch] = useState("");
+  const [riskType, setRiskType] = useState("");
+  const [notifying, setNotifying] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
-  const [form, setForm] = useState({ name: "", phoneOrEmail: "", batch_id: "", parent_name: "", parent_phone: "", admission_date: "", total_fee: "", due_date: "" });
+  const [form, setForm] = useState({ name: "", phoneOrEmail: "+91 ", batch_id: "", parent_name: "", parent_phone: "+91 ", admission_date: "", total_fee: "", due_date: "" });
   const [submitting, setSubmitting] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -81,6 +84,10 @@ export default function StudentsPage() {
   const [csvPreviewRows, setCsvPreviewRows] = useState(null);
   const [csvResult, setCsvResult] = useState(null);
   const [csvUploading, setCsvUploading] = useState(false);
+  const [perfModalOpen, setPerfModalOpen] = useState(false);
+  const [perfStudent, setPerfStudent] = useState(null);
+  const [perfHistory, setPerfHistory] = useState([]);
+  const [perfLoading, setPerfLoading] = useState(false);
   const fileRef = useRef(null);
 
   const [toasts, setToasts] = useState([]);
@@ -93,20 +100,25 @@ export default function StudentsPage() {
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
+    const params = new URLSearchParams(window.location.search);
+    const risk = params.get("risk");
+    const query = risk ? `?risk=${risk}` : "";
+
     const [s, b, m] = await Promise.all([
-      fetch("/api/students").then((r) => r.json()),
+      fetch(`/api/students${query}`).then((r) => r.json()),
       fetch("/api/batches").then((r) => r.json()),
       fetch("/api/me").then((r) => r.json()),
     ]);
     setStudents(Array.isArray(s) ? s : []);
     setBatches(Array.isArray(b) ? b : []);
     setRole(m?.role || "STUDENT");
+    setRiskType(risk || "");
     setLoading(false);
   }
 
   function openAdd() {
     setEditingStudent(null);
-    setForm({ name: "", phoneOrEmail: "", batch_id: "", parent_name: "", parent_phone: "", admission_date: "", total_fee: "", due_date: "" });
+    setForm({ name: "", phoneOrEmail: "+91 ", batch_id: "", parent_name: "", parent_phone: "+91 ", admission_date: "", total_fee: "", due_date: "" });
     setModalOpen(true);
   }
   function openEdit(s) {
@@ -168,6 +180,29 @@ export default function StudentsPage() {
     setDeleting(false);
   }
 
+  async function handleNotify(s) {
+    setNotifying(true);
+    try {
+      const res = await fetch("/api/students/notify-risk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          student_id: s._id, 
+          risk_type: riskType, 
+          risk_value: s.risk_info?.value || "Metric" 
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast(data.message || "Risk notification sent successfully!");
+      } else {
+        toast(data.error || "Notification failed", "error");
+      }
+    } catch {
+      toast("Network error while notifying parent", "error");
+    }
+    setNotifying(false);
+  }
   function handleDrag(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -205,6 +240,23 @@ export default function StudentsPage() {
     reader.readAsText(file);
   }
 
+  async function openPerformance(s) {
+    setPerfStudent(s);
+    setPerfModalOpen(true);
+    setPerfLoading(true);
+    setPerfHistory([]);
+    try {
+      const res = await fetch(`/api/students/${s._id}/performance`);
+      if (res.ok) {
+        const data = await res.json();
+        setPerfHistory(Array.isArray(data) ? data : []);
+      }
+    } catch {
+      toast("Failed to load history", "error");
+    }
+    setPerfLoading(false);
+  }
+
   async function handleConfirmCSV() {
     if (!csvFile) return;
     setCsvUploading(true);
@@ -232,27 +284,28 @@ export default function StudentsPage() {
   }
 
   const filtered = students.filter((s) => {
-    if (!search) return true;
     const q = search.toLowerCase();
-    return (
+    const matchesSearch = (
       (s.user_id?.name || "").toLowerCase().includes(q) ||
       (s.user_id?.phoneOrEmail || "").toLowerCase().includes(q) ||
       (s.batch_id?.name || "").toLowerCase().includes(q) ||
       (s.parent_name || "").toLowerCase().includes(q)
     );
+    const matchesBatch = filterBatch ? (s.batch_id?._id === filterBatch || s.batch_id === filterBatch) : true;
+    return matchesSearch && matchesBatch;
   });
 
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
-          <div className="h-8 w-40 animate-shimmer rounded-xl" />
-          <div className="h-10 w-32 animate-shimmer rounded-xl" />
+          <div className="h-8 w-40 animate-shimmer rounded-lg" />
+          <div className="h-10 w-32 animate-shimmer rounded-lg" />
         </div>
         <div className="card !p-0">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex items-center gap-4 px-5 py-4 border-b border-gray-100">
-              <div className="w-9 h-9 animate-shimmer rounded-full" />
+            <div key={i} className="flex items-center gap-4 px-5 py-3.5 border-b border-gray-100">
+              <div className="w-8 h-8 animate-shimmer rounded-md" />
               <div className="flex-1 space-y-2">
                 <div className="h-4 w-32 animate-shimmer rounded" />
                 <div className="h-3 w-48 animate-shimmer rounded" />
@@ -274,10 +327,16 @@ export default function StudentsPage() {
           <h1 className="page-title">Students</h1>
           <p className="page-subtitle">
             {students.length} student{students.length !== 1 ? "s" : ""} enrolled
+            {riskType && (
+              <span className="ml-2 inline-flex items-center gap-1 text-red-500 font-bold bg-red-50 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">
+                Showing {riskType} risk only
+                <button onClick={() => { window.location.href='/students'; }} className="hover:text-red-700 underline ml-1">Clear</button>
+              </span>
+            )}
           </p>
         </div>
         {role === "ADMIN" && (
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             <button onClick={() => setCsvModalOpen(true)} className="btn-secondary text-sm">
               <Upload size={15}/> Import CSV
             </button>
@@ -293,7 +352,7 @@ export default function StudentsPage() {
 
       {/* ─── CSV Result ─── */}
       {csvResult && (
-        <div className={`p-4 rounded-xl text-sm font-medium flex items-start justify-between gap-4 border ${csvResult.error ? "bg-rose-50 border-rose-200 text-rose-700" : "bg-emerald-50 border-emerald-200 text-emerald-700"}`}>
+        <div className={`p-4 rounded-lg text-sm font-medium flex items-start justify-between gap-4 border ${csvResult.error ? "bg-red-50 border-red-200 text-red-700" : "bg-emerald-50 border-emerald-200 text-emerald-700"}`}>
           <div>
             <div>{csvResult.error || csvResult.message}</div>
             {csvResult.errors?.length > 0 && (
@@ -302,21 +361,27 @@ export default function StudentsPage() {
               </ul>
             )}
           </div>
-          <button onClick={() => setCsvResult(null)} className="text-xs font-bold underline opacity-70 hover:opacity-100 whitespace-nowrap">Dismiss</button>
+          <button onClick={() => setCsvResult(null)} className="text-xs font-semibold underline opacity-70 hover:opacity-100 whitespace-nowrap">Dismiss</button>
         </div>
       )}
 
       {/* ─── Search ─── */}
       {students.length > 0 && (
-        <div className="relative max-w-xs">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search students..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input-field !pl-10"
-          />
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
+            <input type="text" placeholder="Search students..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-slate-500/20 focus:border-slate-400 outline-none transition-all shadow-sm" />
+          </div>
+          <select
+            value={filterBatch}
+            onChange={(e) => setFilterBatch(e.target.value)}
+            className="py-2 px-3 bg-white border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-slate-500/20 focus:border-slate-400 outline-none shadow-sm min-w-[160px]"
+          >
+            <option value="">All Batches</option>
+            {batches.map(b => (
+              <option key={b._id} value={b._id}>{b.name}</option>
+            ))}
+          </select>
         </div>
       )}
 
@@ -326,14 +391,22 @@ export default function StudentsPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Student</th>
-                <th>Contact</th>
-                <th>Batch</th>
-                <th>Parent</th>
-                <th>Phone</th>
-                <th>Admitted</th>
-                <th>Total Fee</th>
-                {role === "ADMIN" && <th className="text-right">Actions</th>}
+                <th className="min-w-[180px]">Student</th>
+                <th className="min-w-[160px]">Contact</th>
+                <th className="min-w-[150px]">Batch</th>
+                {riskType ? (
+                   <th className="min-w-[130px]">Risk Metrics</th>
+                ) : (
+                  <>
+                    <th className="min-w-[130px]">Attendance (30D)</th>
+                    <th className="min-w-[120px]">Exam Avg.</th>
+                  </>
+                )}
+                <th className="min-w-[150px]">Parent Name</th>
+                <th className="min-w-[140px]">Phone No.</th>
+                <th className="min-w-[120px]">Admission</th>
+                <th className="min-w-[110px]">Total Fee</th>
+                {(role === "ADMIN" || role === "TEACHER") && <th className="text-right min-w-[100px]">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -341,34 +414,76 @@ export default function StudentsPage() {
                 <tr key={s._id}>
                   <td>
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-violet-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm">
+                      <div className="w-7 h-7 bg-slate-700 rounded-md flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                         {(s.user_id?.name || "?")[0].toUpperCase()}
                       </div>
-                      <span className="font-semibold text-gray-800">{s.user_id?.name || "—"}</span>
+                      <span className="font-semibold text-gray-800 text-sm">{s.user_id?.name || "—"}</span>
                     </div>
                   </td>
-                  <td className="text-gray-500">{s.user_id?.phoneOrEmail || "—"}</td>
                   <td>
-                    <span className="badge badge-indigo">
+                    <div className="max-w-[150px] truncate-fade text-sm text-gray-500" title={s.user_id?.phoneOrEmail || "—"}>
+                      {s.user_id?.phoneOrEmail || "—"}
+                    </div>
+                  </td>
+                  <td>
+                    <span className="badge badge-slate whitespace-nowrap">
+                      <Users size={12} className="mr-1" />
                       {s.batch_id?.name || "No Batch"}
                     </span>
                   </td>
-                  <td className="text-gray-600">{s.parent_name || "—"}</td>
+                  {riskType ? (
+                    <td>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{s.risk_info?.label || "Metric"}</span>
+                        <span className={`text-sm font-bold ${riskType === 'fees' ? 'text-red-600' : 'text-amber-600'}`}>{s.risk_info?.value || "—"}</span>
+                      </div>
+                    </td>
+                  ) : (
+                    <>
+                      <td>
+                        <div className="flex flex-col">
+                          <div className={`text-xs font-bold ${s.attendance_percentage < 75 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                            {s.attendance_percentage !== null ? `${s.attendance_percentage.toFixed(1)}%` : "—"}
+                          </div>
+                          <div className="w-16 h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full ${s.attendance_percentage < 50 ? 'bg-red-500' : s.attendance_percentage < 75 ? 'bg-amber-500' : 'bg-emerald-500'}`} 
+                              style={{ width: `${s.attendance_percentage || 0}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <button onClick={() => openPerformance(s)} className="group flex items-center gap-1.5 px-2 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md transition-all">
+                          <BarChart3 size={13} className="text-slate-500 group-hover:text-slate-700" />
+                          <span className="text-[11px] font-bold text-slate-600 group-hover:text-slate-800">
+                             {s.performance_avg !== null ? `${s.performance_avg.toFixed(1)}%` : "View"}
+                          </span>
+                        </button>
+                      </td>
+                    </>
+                  )}
+                  <td className="text-gray-600 text-sm">{s.parent_name || "—"}</td>
                   <td className="text-gray-500 font-mono text-xs">{s.parent_phone || "—"}</td>
                   <td className="text-gray-500 text-xs">
                     {s.admission_date ? new Date(s.admission_date).toLocaleDateString('en-GB') : "—"}
                   </td>
-                  <td className="text-gray-700 font-bold text-xs tracking-wide">
+                  <td className="text-gray-700 font-semibold text-xs tracking-wide">
                     ₹{s.total_fee?.toLocaleString() || "0"}
                   </td>
-                  {role === "ADMIN" && (
+                  {(role === "ADMIN" || role === "TEACHER") && (
                     <td>
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => openEdit(s)} className="btn-ghost !p-1.5 rounded-lg" title="Edit">
-                          <Pencil size={15} />
+                        {riskType && (
+                          <button onClick={() => handleNotify(s)} disabled={notifying} className="mr-2 btn-ghost !p-1.5 rounded-md text-amber-600 hover:bg-amber-50" title="Notify Parent">
+                            <Bell size={14} />
+                          </button>
+                        )}
+                        <button onClick={() => openEdit(s)} className="btn-ghost !p-1.5 rounded-md text-gray-400" title="Edit">
+                          <Pencil size={14} />
                         </button>
-                        <button onClick={() => setDeleteTarget(s)} className="btn-ghost !p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50" title="Delete">
-                          <Trash2 size={15} />
+                        <button onClick={() => setDeleteTarget(s)} className="btn-ghost !p-1.5 rounded-md text-red-400 hover:text-red-600 hover:bg-red-50" title="Delete">
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </td>
@@ -378,7 +493,7 @@ export default function StudentsPage() {
               {filtered.length === 0 && students.length > 0 && (
                 <tr>
                   <td colSpan={role === "ADMIN" ? 8 : 7} className="py-10 text-center text-gray-400">
-                    No students match "{search}"
+                    No students match &ldquo;{search}&rdquo;
                   </td>
                 </tr>
               )}
@@ -386,10 +501,10 @@ export default function StudentsPage() {
                 <tr>
                   <td colSpan={role === "ADMIN" ? 8 : 7} className="py-16">
                     <div className="flex flex-col items-center justify-center text-center">
-                      <div className="w-14 h-14 bg-gray-100 text-gray-300 rounded-2xl flex items-center justify-center mb-4">
-                        <Users size={28} />
+                      <div className="w-12 h-12 bg-gray-100 text-gray-300 rounded-lg flex items-center justify-center mb-3">
+                        <Users size={24} />
                       </div>
-                      <h3 className="text-base font-bold text-gray-700">No students yet</h3>
+                      <h3 className="text-sm font-semibold text-gray-700">No students yet</h3>
                       <p className="text-sm text-gray-500 mt-1 max-w-xs">Add or import students to get started.</p>
                     </div>
                   </td>
@@ -458,26 +573,26 @@ export default function StudentsPage() {
       {/* ─── CSV Import Modal ─── */}
       <Modal open={csvModalOpen} onClose={() => { setCsvModalOpen(false); setCsvFile(null); setCsvPreviewRows(null); setCsvResult(null); }} title="Import Students (CSV)">
         <div className="modal-body space-y-4">
-          <div className="bg-gray-50 text-gray-600 text-sm p-3.5 rounded-xl border border-gray-200">
-            <p className="font-bold text-gray-800 mb-1">Required Headers:</p>
-            <code className="bg-white px-2.5 py-1 rounded-lg text-indigo-600 text-xs border border-gray-200 font-mono">name, parent_phone, batch_name, admission_date</code>
+          <div className="bg-gray-50 text-gray-600 text-sm p-3.5 rounded-lg border border-gray-200">
+            <p className="font-semibold text-gray-800 mb-1">Required Headers:</p>
+            <code className="bg-white px-2.5 py-1 rounded-md text-slate-700 text-xs border border-gray-200 font-mono">name, parent_phone, batch_name, admission_date</code>
           </div>
           
           <div 
-            className={`border-2 border-dashed rounded-2xl p-8 text-center transition-colors ${dragActive ? "border-indigo-400 bg-indigo-50" : "border-gray-200 bg-white hover:bg-gray-50"} ${csvFile ? "border-emerald-400 bg-emerald-50" : ""}`}
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragActive ? "border-slate-400 bg-slate-50" : "border-gray-200 bg-white hover:bg-gray-50"} ${csvFile ? "border-emerald-400 bg-emerald-50" : ""}`}
             onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
           >
             {csvFile ? (
               <div className="flex flex-col items-center">
-                <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 mb-3"><CheckCircle size={24} /></div>
-                <h3 className="font-bold text-gray-800">{csvFile.name}</h3>
+                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 mb-3"><CheckCircle size={22} /></div>
+                <h3 className="font-semibold text-gray-800 text-sm">{csvFile.name}</h3>
                 <p className="text-sm text-gray-500 mt-1">Found {csvPreviewRows} row(s) inside.</p>
-                <button onClick={() => { setCsvFile(null); setCsvPreviewRows(null); }} className="text-red-500 hover:text-red-700 text-xs font-bold mt-4 underline">Remove file</button>
+                <button onClick={() => { setCsvFile(null); setCsvPreviewRows(null); }} className="text-red-500 hover:text-red-700 text-xs font-semibold mt-4 underline">Remove file</button>
               </div>
             ) : (
               <label className="flex flex-col items-center cursor-pointer">
-                <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-500 mb-3"><Upload size={24} /></div>
-                <h3 className="font-bold text-gray-700">Drag & Drop your CSV</h3>
+                <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500 mb-3"><Upload size={22} /></div>
+                <h3 className="font-semibold text-gray-700 text-sm">Drag & Drop your CSV</h3>
                 <p className="text-sm text-gray-500 mt-1">or click to browse your files</p>
                 <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleFileSelect} />
               </label>
@@ -499,6 +614,65 @@ export default function StudentsPage() {
         name={deleteTarget?.user_id?.name || "this student"}
         deleting={deleting}
       />
+
+      {/* ─── Performance History Modal ─── */}
+      <Modal open={perfModalOpen} onClose={() => setPerfModalOpen(false)} title="Test Performance History">
+        <div className="modal-body !p-0 max-h-[500px] overflow-y-auto">
+          {perfStudent && (
+            <div className="p-5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 bg-slate-700 text-white flex items-center justify-center rounded-lg font-bold text-lg">
+                    {(perfStudent.user_id?.name || "?")[0]}
+                 </div>
+                 <div>
+                    <h3 className="font-bold text-gray-900 leading-none">{perfStudent.user_id?.name}</h3>
+                    <p className="text-xs text-gray-500 mt-1">{perfStudent.batch_id?.name || "No Batch"}</p>
+                 </div>
+              </div>
+              <div className="text-right">
+                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Average Score</div>
+                <div className="text-xl font-bold text-slate-800">{perfStudent.performance_avg !== null ? `${perfStudent.performance_avg.toFixed(1)}%` : "—"}</div>
+              </div>
+            </div>
+          )}
+          
+          <div className="p-4">
+            {perfLoading ? (
+               <div className="py-20 flex flex-col items-center justify-center gap-3 opacity-50">
+                  <Activity size={32} className="animate-spin text-slate-400" />
+                  <p className="text-sm font-medium">Crunching records...</p>
+               </div>
+            ) : perfHistory.length > 0 ? (
+               <div className="space-y-3">
+                 {perfHistory.map((res, i) => (
+                   <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-slate-200 transition-colors bg-white shadow-sm">
+                      <div className="space-y-1">
+                         <div className="font-bold text-gray-800 text-sm">{res.test_id?.name || "Unknown test"}</div>
+                         <div className="text-[10px] text-gray-400 font-medium tracking-tight uppercase flex items-center gap-1.5 border-t border-gray-50 pt-1">
+                            {res.test_id?.date ? new Date(res.test_id.date).toLocaleDateString('en-GB') : "—"}
+                         </div>
+                      </div>
+                      <div className="text-right">
+                         <div className="text-sm font-bold text-slate-700">{res.marks} / {res.test_id?.total_marks || 100}</div>
+                         <div className={`text-[10px] font-bold ${ (res.marks / (res.test_id?.total_marks || 100)) >= 0.75 ? "text-emerald-500" : "text-amber-500" }`}>
+                            {((res.marks / (res.test_id?.total_marks || 100)) * 100).toFixed(1)}%
+                         </div>
+                      </div>
+                   </div>
+                 ))}
+               </div>
+            ) : (
+               <div className="py-20 text-center text-gray-400 border-dashed border border-gray-100 rounded-lg">
+                  <BarChart3 size={32} className="mx-auto mb-2 opacity-30" />
+                  <p className="text-sm font-medium">No test results found for this student.</p>
+               </div>
+            )}
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button onClick={() => setPerfModalOpen(false)} className="btn-primary w-full">Close View</button>
+        </div>
+      </Modal>
     </div>
   );
 }

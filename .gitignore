@@ -36,3 +36,7 @@ db_debug.txt
 att_dump.txt
 debug-student.json
 debug-teacher.json
+
+# Temporary scripts
+tmp/
+scripts/reset-and-seed.js

@@ -14,6 +14,7 @@ export default function AttendancePage() {
   const [date, setDate] = useState(todayStr);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [notifying, setNotifying] = useState(false);
   const [existingRecords, setExistingRecords] = useState([]);
   const [role, setRole] = useState("");
 
@@ -62,28 +63,58 @@ export default function AttendancePage() {
 
   async function markAll() {
     setSaving(true);
-    for (const student of students) {
-      await fetch("/api/attendance/mark", {
+    try {
+      const records = students.map((student) => ({
+        student_id: student._id,
+        batch_id: selectedBatch,
+        date,
+        status: attendance[student._id] || "PRESENT",
+      }));
+
+      const res = await fetch("/api/attendance/mark", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          student_id: student._id,
-          batch_id: selectedBatch,
-          date,
-          status: attendance[student._id] || "PRESENT",
-        }),
+        body: JSON.stringify({ records }),
       });
+
+      if (res.ok) {
+        toast.success("Attendance saved!");
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to save attendance");
+      }
+    } catch {
+      toast.error("Network error saving attendance");
     }
     setSaving(false);
-    toast.success("Attendance saved!");
+  }
+
+  async function notifyAbsentees() {
+    setNotifying(true);
+    try {
+      const res = await fetch("/api/attendance/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ batch_id: selectedBatch, date })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || "Notifications sent!");
+      } else {
+        toast.error(data.error || "Failed to notify.");
+      }
+    } catch (err) {
+      toast.error("Network error.");
+    }
+    setNotifying(false);
   }
 
   if (loading) {
     return (
       <div className="max-w-5xl mx-auto space-y-6">
-        <div className="h-8 w-48 animate-shimmer rounded-xl" />
-        <div className="h-24 animate-shimmer rounded-2xl" />
-        <div className="h-64 animate-shimmer rounded-2xl" />
+        <div className="h-8 w-48 animate-shimmer rounded-lg" />
+        <div className="h-24 animate-shimmer rounded-lg" />
+        <div className="h-64 animate-shimmer rounded-lg" />
       </div>
     );
   }
@@ -113,7 +144,7 @@ export default function AttendancePage() {
 
       {!selectedBatch && (
         <div className="card py-16 text-center border-dashed border-gray-200">
-          <div className="w-16 h-16 mx-auto bg-gray-100 rounded-2xl flex items-center justify-center text-gray-300 mb-4">
+          <div className="w-14 h-14 mx-auto bg-gray-100 rounded-lg flex items-center justify-center text-gray-300 mb-3">
             <CalendarCheck size={32} />
           </div>
           <h3 className="text-base font-bold text-gray-700">Select a batch to continue</h3>
@@ -137,13 +168,13 @@ export default function AttendancePage() {
                   <tr key={s._id}>
                     <td className="font-semibold text-gray-800">{s.user_id?.name || s.parent_name}</td>
                     <td>
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border ${attendance[s._id] === "PRESENT" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-red-50 text-red-600 border-red-100"}`}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold border ${attendance[s._id] === "PRESENT" ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-red-50 text-red-600 border-red-200"}`}>
                         {attendance[s._id] || "PRESENT"}
                       </span>
                     </td>
                     {role !== "STUDENT" && (
                     <td>
-                      <button onClick={() => toggle(s._id)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors bg-indigo-50 px-3 py-1.5 rounded-lg flex items-center gap-1 border border-indigo-100 hover:bg-indigo-100">
+                      <button onClick={() => toggle(s._id)} className="text-xs font-medium text-slate-700 hover:text-slate-900 transition-colors bg-slate-50 px-3 py-1.5 rounded-md flex items-center gap-1 border border-slate-200 hover:bg-slate-100">
                         {attendance[s._id] === "PRESENT" ? "Mark Absent" : "Mark Present"}
                       </button>
                     </td>
@@ -154,8 +185,14 @@ export default function AttendancePage() {
             </table>
           </div>
           {role !== "STUDENT" && (
-          <div className="p-5 border-t border-gray-100 bg-gray-50/50 flex justify-end rounded-b-2xl">
-            <button onClick={markAll} disabled={saving} className="btn-primary">
+          <div className="p-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-end items-center gap-3">
+            {(role === "ADMIN" || role === "TEACHER") && (
+              <button onClick={notifyAbsentees} disabled={notifying || existingRecords.length === 0} className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 text-sm font-medium rounded-md transition-colors disabled:opacity-50 w-full sm:w-auto">
+                <AlertCircle size={15}/>
+                {notifying ? "Notifying..." : "Notify Absentees"}
+              </button>
+            )}
+            <button onClick={markAll} disabled={saving} className="btn-primary w-full sm:w-auto">
               {saving ? "Saving..." : <><Save size={15}/> Save Attendance</>}
             </button>
           </div>
@@ -165,7 +202,7 @@ export default function AttendancePage() {
 
       {selectedBatch && students.length === 0 && (
         <div className="card py-16 text-center border-dashed border-gray-200">
-          <div className="w-16 h-16 mx-auto bg-gray-100 rounded-2xl flex items-center justify-center text-gray-300 mb-4">
+          <div className="w-14 h-14 mx-auto bg-gray-100 rounded-lg flex items-center justify-center text-gray-300 mb-3">
             <Users size={32} />
           </div>
           <h3 className="text-base font-bold text-gray-700">No students found</h3>

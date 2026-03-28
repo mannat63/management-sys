@@ -10,4 +10,9 @@ const ResultSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Compound indexes for aggregations and lookups
+ResultSchema.index({ institute_id: 1, test_id: 1 });
+ResultSchema.index({ institute_id: 1, student_id: 1 });
+ResultSchema.index({ test_id: 1, student_id: 1, institute_id: 1 }, { unique: true });
+
 export default mongoose.models.Result || mongoose.model("Result", ResultSchema);
