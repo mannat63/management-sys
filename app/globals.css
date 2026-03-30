@@ -183,6 +183,10 @@
   animation: shimmer 2s infinite;
 }
 
+.animate-slideUp {
+  animation: slideUp 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* GPU-layer hint only for modals — NOT cards (breaks Recharts ResizeObserver) */
 .modal-panel {
   will-change: transform;

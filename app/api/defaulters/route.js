@@ -18,29 +18,41 @@ export async function GET(req) {
     ]);
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
-    const newFees = [];
+
     for (const f of allLatestFees) {
       let lastDueDate = new Date(f.latestFee.due_date);
       lastDueDate.setUTCHours(0, 0, 0, 0);
       let isLatestPaid = f.latestFee.status === "PAID";
       let iter = 0;
+
       while ((today >= lastDueDate || isLatestPaid) && iter < 12) {
         lastDueDate.setDate(lastDueDate.getDate() + 30);
-        newFees.push({
-          student_id: f._id,
-          total_amount: f.latestFee.total_amount,
-          paid_amount: 0,
-          due_amount: f.latestFee.total_amount,
-          due_date: new Date(lastDueDate),
-          status: "DUE",
-          institute_id: authUser.institute_id,
-        });
+        lastDueDate.setUTCHours(0, 0, 0, 0);
+
+        try {
+          const exists = await Fee.findOne({
+            student_id: f._id,
+            institute_id: authUser.institute_id,
+            due_date: lastDueDate
+          }).lean();
+
+          if (!exists) {
+            await Fee.create({
+              student_id: f._id,
+              total_amount: f.latestFee.total_amount,
+              paid_amount: 0,
+              due_amount: f.latestFee.total_amount,
+              due_date: new Date(lastDueDate),
+              status: "DUE",
+              institute_id: authUser.institute_id,
+            });
+          }
+        } catch (err) {
+          console.log("Duplicate fee prevented in Defaulters API.");
+        }
         isLatestPaid = false;
         iter++;
       }
-    }
-    if (newFees.length > 0) {
-      await Fee.insertMany(newFees);
     }
     // ---------------------------------------------
 

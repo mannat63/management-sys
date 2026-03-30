@@ -45,35 +45,44 @@ export async function GET(req) {
       const today = new Date();
       today.setUTCHours(0, 0, 0, 0);
 
-      const newFees = [];
       for (const f of allLatestFees) {
         let lastDueDate = new Date(f.latestFee.due_date);
         lastDueDate.setUTCHours(0, 0, 0, 0);
         let isLatestPaid = f.latestFee.status === "PAID";
         let iter = 0;
 
-        // If the current active fee is already fully paid, or its billing cycle is completely over (<= today)
-        // We must generate the next month's invoice so there's always an active future/upcoming cycle
+        // Generate next billing cycle ONLY if latest is paid OR cycle is already reached/passed
         while ((today >= lastDueDate || isLatestPaid) && iter < 12) {
           lastDueDate.setDate(lastDueDate.getDate() + 30);
+          lastDueDate.setUTCHours(0, 0, 0, 0);
           
-          newFees.push({
-            student_id: f._id,
-            total_amount: f.latestFee.total_amount,
-            paid_amount: 0,
-            due_amount: f.latestFee.total_amount,
-            due_date: new Date(lastDueDate),
-            status: "DUE",
-            institute_id: authUser.institute_id,
-          });
+          try {
+            // Check existence one last time before creating
+            const exists = await Fee.findOne({
+              student_id: f._id,
+              institute_id: authUser.institute_id,
+              due_date: lastDueDate
+            }).lean();
+
+            if (!exists) {
+              await Fee.create({
+                student_id: f._id,
+                total_amount: f.latestFee.total_amount,
+                paid_amount: 0,
+                due_amount: f.latestFee.total_amount,
+                due_date: new Date(lastDueDate),
+                status: "DUE",
+                institute_id: authUser.institute_id,
+              });
+            }
+          } catch (dupErr) {
+            // Expected if concurrent requests hit the unique index
+            console.log("Duplicate fee prevented by DB index.");
+          }
           
-          isLatestPaid = false; // Next generated month is explicitly unpaid!
+          isLatestPaid = false; 
           iter++;
         }
-      }
-
-      if (newFees.length > 0) {
-        await Fee.insertMany(newFees);
       }
     }
     // ---------------------------------------------

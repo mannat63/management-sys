@@ -210,38 +210,36 @@ export default function DashboardPage() {
 
       {/* ─── GRAPHS ─── */}
       {graphs && stats?.role === "ADMIN" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
-          {/* Management Insights */}
-          <div className="card flex flex-col h-full">
-            <h3 className="section-heading mb-5">
-               <span className="p-1.5 bg-slate-100 text-slate-600 rounded-md">
-                 <Activity size={13} />
-               </span>
-               Management Insights
+          {/* Management Profile */}
+          <div className="card flex flex-col h-full min-h-[400px] border-slate-200">
+            <h3 className="section-heading mb-6 text-slate-800 font-bold border-b border-slate-50 pb-4">
+               <Activity size={14} className="text-slate-400" />
+               Management Intelligence
             </h3>
             
-            <div className="grid grid-cols-1 gap-3 flex-1 overflow-y-auto pr-1">
+            <div className="space-y-4 flex-1 overflow-y-auto pr-1">
               {insights?.feeAlert ? (
-                <div className="p-3.5 border border-red-100 bg-red-50/40 rounded-lg flex items-start gap-3">
-                  <div className="mt-0.5 p-1.5 bg-red-100 text-red-600 rounded-md shrink-0 shadow-sm">
-                    <AlertTriangle size={14} />
+                <div className="p-4 border border-red-100 bg-red-50/30 rounded-xl flex items-start gap-3">
+                  <div className="mt-0.5 p-2 bg-red-100 text-red-600 rounded-lg shrink-0 shadow-sm">
+                    <AlertTriangle size={15} />
                   </div>
                   <div className="text-sm">
-                    <p className="font-semibold text-gray-900">Revenue Risk</p>
-                    <p className="text-gray-600 mt-0.5">
-                      <span className="text-red-600 font-medium">{insights.feeAlert.top_name}</span> has ₹{insights.feeAlert.top_amount.toLocaleString()} outstanding.
+                    <p className="font-bold text-slate-900 mb-1 tracking-tight">Revenue Alert</p>
+                    <p className="text-slate-600 leading-relaxed">
+                      <span className="text-red-700 font-bold underline decoration-red-200 underline-offset-2">{insights.feeAlert.top_name}</span> has an outstanding balance of ₹{insights.feeAlert.top_amount.toLocaleString()}.
                     </p>
                   </div>
                 </div>
               ) : (
-                <div className="p-3.5 border border-emerald-100 bg-emerald-50/40 rounded-lg flex items-start gap-3">
-                  <div className="mt-0.5 p-1.5 bg-emerald-100 text-emerald-700 rounded-md shrink-0 shadow-sm">
-                    <Wallet size={14} />
+                <div className="p-4 border border-emerald-100 bg-emerald-50/30 rounded-xl flex items-start gap-3">
+                  <div className="mt-0.5 p-2 bg-emerald-100 text-emerald-700 rounded-lg shrink-0 shadow-sm">
+                    <Wallet size={15} />
                   </div>
                   <div className="text-sm">
-                    <p className="font-semibold text-gray-900">Healthy Cashflow</p>
-                    <p className="text-gray-600 mt-0.5">Collections stable. No high-risk defaulters.</p>
+                    <p className="font-bold text-slate-900 mb-1 tracking-tight">Operational Stability</p>
+                    <p className="text-slate-600 leading-relaxed">Financial inflows are currently stable. No immediate high-priority defaulters detected.</p>
                   </div>
                 </div>
               )}
@@ -255,83 +253,83 @@ export default function DashboardPage() {
                   
                   if (recentAvg < previousAvg - 5) {
                     return (
-                      <div className="p-3.5 border border-amber-100 bg-amber-50/40 rounded-lg flex items-start gap-3">
-                        <div className="mt-0.5 p-1.5 bg-amber-100 text-amber-700 rounded-md shrink-0 shadow-sm">
-                          <TrendingUp size={14} className="rotate-180" />
+                      <div className="p-4 border border-amber-100 bg-amber-50/30 rounded-xl flex items-start gap-3">
+                        <div className="mt-0.5 p-2 bg-amber-100 text-amber-700 rounded-lg shrink-0 shadow-sm">
+                          <TrendingUp size={15} className="rotate-180" />
                         </div>
                         <div className="text-sm">
-                          <p className="font-semibold text-gray-900">Attendance Drop</p>
-                          <p className="text-gray-600 mt-0.5">
-                            <span className="text-amber-700 font-medium">{(previousAvg - recentAvg).toFixed(0)}% drop</span> vs last window.
+                          <p className="font-bold text-slate-900 mb-1 tracking-tight">Attendance Variance</p>
+                          <p className="text-slate-600 leading-relaxed">
+                            Detected a <span className="text-amber-800 font-bold">{(previousAvg - recentAvg).toFixed(1)}% reduction</span> in student engagement compared to previous reporting window.
                           </p>
                         </div>
                       </div>
                     );
                   }
                   return (
-                    <div className="p-3.5 border border-blue-100 bg-blue-50/40 rounded-lg flex items-start gap-3">
-                      <div className="mt-0.5 p-1.5 bg-blue-100 text-blue-700 rounded-md shrink-0 shadow-sm">
-                        <TrendingUp size={14} />
+                    <div className="p-4 border border-blue-100 bg-blue-50/30 rounded-xl flex items-start gap-3">
+                      <div className="mt-0.5 p-2 bg-blue-100 text-blue-700 rounded-lg shrink-0 shadow-sm">
+                        <TrendingUp size={15} />
                       </div>
                       <div className="text-sm">
-                        <p className="font-semibold text-gray-900">Engagement Rising</p>
-                        <p className="text-gray-600 mt-0.5">Attendance trending up successfully.</p>
+                        <p className="font-bold text-slate-900 mb-1 tracking-tight">Engagement Metric</p>
+                        <p className="text-slate-600 leading-relaxed">Student attendance trends indicate consistent institutional engagement growth.</p>
                       </div>
                     </div>
                   );
                 })()
               ) : (
-                <div className="p-3.5 border border-slate-200 bg-slate-50/50 rounded-lg flex items-start gap-3">
-                  <div className="mt-0.5 p-1.5 bg-white border border-slate-200 text-slate-500 rounded-md shrink-0 shadow-sm">
-                    <Calendar size={14} />
+                <div className="p-4 border border-slate-200 bg-slate-50/50 rounded-xl flex items-start gap-3">
+                  <div className="mt-0.5 p-2 bg-white border border-slate-200 text-slate-400 rounded-lg shrink-0 shadow-sm">
+                    <Calendar size={15} />
                   </div>
                   <div className="text-sm">
-                    <p className="font-semibold text-gray-900">Attendance Tracking</p>
-                    <p className="text-gray-500 mt-0.5">Collecting data for trends.</p>
+                    <p className="font-bold text-slate-900 mb-1 tracking-tight">Data Accumulation</p>
+                    <p className="text-slate-500 leading-relaxed">Insufficient attendance data for trending. Continuing historical record-keeping.</p>
                   </div>
                 </div>
               )}
               
               {insights?.testAlert ? (
-                <div className="p-3.5 border border-slate-200 bg-white rounded-lg flex items-start gap-3 shadow-sm">
-                  <div className="mt-0.5 p-1.5 bg-slate-100 text-slate-600 rounded-md shrink-0 border border-slate-200">
-                    <Target size={14} />
+                <div className="p-4 border border-slate-200 bg-white rounded-xl flex items-start gap-3 shadow-sm">
+                  <div className="mt-0.5 p-2 bg-slate-800 text-white rounded-lg shrink-0 shadow-sm">
+                    <Target size={15} />
                   </div>
                   <div className="text-sm">
-                    <p className="font-semibold text-gray-900">Academic Volatility</p>
-                    <p className="text-gray-600 mt-0.5">
-                      Drop in <span className="font-semibold text-slate-800">{insights.testAlert[0].batch_name}</span> ({insights.testAlert[0].drop_percentage}%).
+                    <p className="font-bold text-slate-900 mb-1 tracking-tight">Academic Performance</p>
+                    <p className="text-slate-600 leading-relaxed">
+                      Performance deviation in <span className="font-bold text-slate-800">{insights.testAlert[0].batch_name}</span>. Average scores declined by {insights.testAlert[0].drop_percentage}%.
                     </p>
                   </div>
                 </div>
               ) : (
-                <div className="p-3.5 border border-slate-200 bg-white rounded-lg flex items-start gap-3 shadow-sm">
-                  <div className="mt-0.5 p-1.5 bg-slate-100 text-slate-600 rounded-md shrink-0 border border-slate-200">
-                    <Target size={14} />
+                <div className="p-4 border border-slate-200 bg-white rounded-xl flex items-start gap-3 shadow-sm">
+                  <div className="mt-0.5 p-2 bg-slate-100 text-slate-600 rounded-lg shrink-0 border border-slate-200">
+                    <Target size={15} />
                   </div>
                   <div className="text-sm">
-                    <p className="font-semibold text-gray-900">Academic Baseline Stable</p>
-                    <p className="text-gray-500 mt-0.5">Scores consistent across batches.</p>
+                    <p className="font-bold text-slate-900 mb-1 tracking-tight">Academic Baseline</p>
+                    <p className="text-slate-500 leading-relaxed">Performance scores across all batches remain within expected statistical deviations.</p>
                   </div>
                 </div>
               )}
 
-              {/* 🏆 Top Performers Section */}
+              {/* Top Performers Section */}
               {insights?.topPerformers && (
-                <div className="p-4 bg-slate-900 text-white rounded-lg shadow-inner mt-2">
-                   <div className="flex items-center gap-2 mb-3 border-b border-slate-700 pb-2">
+                <div className="p-5 bg-slate-900 text-white rounded-2xl shadow-xl mt-4">
+                   <div className="flex items-center gap-3 mb-4 border-b border-white/10 pb-3">
                       <TrendingUp size={16} className="text-emerald-400" />
-                      <h4 className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Top Performers / Batch</h4>
+                      <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Institutional Excellence</h4>
                    </div>
-                   <div className="space-y-2.5">
+                   <div className="space-y-4">
                       {insights.topPerformers.map((tp, i) => (
                         <div key={i} className="flex justify-between items-center group">
                            <div className="min-w-0">
-                              <p className="text-xs font-bold truncate group-hover:text-emerald-400 transition-colors">{tp.student_name}</p>
-                              <p className="text-[10px] text-slate-500 uppercase font-medium">{tp.batch_name}</p>
+                              <p className="text-[13px] font-bold truncate group-hover:text-emerald-400 transition-colors tracking-tight">{tp.student_name}</p>
+                              <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mt-0.5">{tp.batch_name}</p>
                            </div>
                            <div className="text-right shrink-0">
-                              <div className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-black rounded-full border border-emerald-500/20">
+                              <div className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-[11px] font-black rounded-full border border-emerald-500/20 shadow-sm italic">
                                  {tp.score}%
                               </div>
                            </div>
@@ -344,69 +342,73 @@ export default function DashboardPage() {
           </div>
 
           {/* Attendance Chart */}
-          <div className="card p-5">
-            <h3 className="section-heading mb-5">
-              <Users size={13} className="text-slate-500"/> Attendance Trend (30 Days)
+          <div className="card p-6 border-slate-200">
+            <h3 className="section-heading mb-6 text-slate-800 font-bold pb-4 border-b border-slate-50">
+              <Users size={14} className="text-slate-400"/>
+              Longitudinal Attendance Trend
             </h3>
-            <div className="h-60 w-full relative min-w-0">
+            <div className="h-64 w-full relative min-h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={graphs.attendance}>
+                <AreaChart data={graphs.attendance || []}>
                   <defs>
                     <linearGradient id="colorAttendance" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#1e293b" stopOpacity={0.15}/>
+                      <stop offset="5%" stopColor="#1e293b" stopOpacity={0.1}/>
                       <stop offset="95%" stopColor="#1e293b" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                  <XAxis dataKey="date" fontSize={11} tickLine={false} axisLine={false} tickMargin={12} tick={{ fill: '#64748b' }} />
-                  <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} domain={[0, 100]} tick={{ fill: '#64748b' }} width={45} />
-                  <Tooltip cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', fontSize: '13px', fontWeight: '600', padding: '10px 14px' }} />
-                  <Area type="monotone" dataKey="presentPct" stroke="#1e293b" strokeWidth={3} fillOpacity={1} fill="url(#colorAttendance)" dot={{ r: 3, fill: '#1e293b', strokeWidth: 0 }} activeDot={{ r: 5, fill: '#1e293b', stroke: '#fff', strokeWidth: 2 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} tickMargin={15} tick={{ fill: '#94a3b8', fontWeight: 500 }} />
+                  <YAxis fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} domain={[0, 100]} tick={{ fill: '#94a3b8', fontWeight: 500 }} width={40} />
+                  <Tooltip cursor={{ stroke: '#e2e8f0', strokeWidth: 1, strokeDasharray: '4 4' }} contentStyle={{ borderRadius: '12px', border: '1px solid #f1f5f9', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: '700', padding: '12px' }} />
+                  <Area type="monotone" dataKey="presentPct" stroke="#1e293b" strokeWidth={3} fillOpacity={1} fill="url(#colorAttendance)" dot={{ r: 4, fill: '#1e293b', strokeWidth: 0 }} activeDot={{ r: 6, fill: '#1e293b', stroke: '#fff', strokeWidth: 2 }} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
 
           {/* Fee Breakdown */}
-          <div className="card p-5 flex flex-col">
-            <h3 className="section-heading mb-4">
-              <Wallet size={13} className="text-slate-500"/> Fee Status Breakdown
+          <div className="card p-6 border-slate-200 flex flex-col">
+            <h3 className="section-heading mb-6 text-slate-800 font-bold pb-4 border-b border-slate-50">
+              <Wallet size={14} className="text-slate-400"/>
+              Revenue Distribution
             </h3>
-            <div className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-6">
-              <div className="h-[200px] w-full max-w-[200px] shrink-0 relative min-w-0">
+            <div className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-8 min-h-[240px]">
+              <div className="h-[220px] w-full max-w-[220px] shrink-0 relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Tooltip 
-                      contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', padding: '8px 12px', fontSize: '12px', fontWeight: '600' }} 
+                      contentStyle={{ borderRadius: '12px', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', padding: '10px', fontSize: '11px', fontWeight: '700' }} 
                       formatter={(value) => `₹${value.toLocaleString()}`} 
                     />
                     <Pie
-                      data={graphs.feesObj}
+                      data={graphs.feesObj || []}
                       cx="50%"
                       cy="50%"
-                      innerRadius={62}
-                      outerRadius={82}
-                      paddingAngle={3}
+                      innerRadius={70}
+                      outerRadius={95}
+                      paddingAngle={4}
                       dataKey="value"
                       stroke="none"
-                      cornerRadius={4}
+                      cornerRadius={6}
                     >
-                      {graphs.feesObj.map((entry, index) => (
+                      {(graphs.feesObj || []).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} />
                       ))}
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex flex-col gap-2.5 justify-center">
-                {graphs.feesObj.map((entry, idx) => (
-                  <div key={idx} className="p-2.5 rounded-md bg-gray-50 border border-gray-100 min-w-[140px]">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.fill }} />
-                      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{entry.name}</span>
-                    </div>
-                    <div className="text-base font-bold text-gray-900 leading-none">
-                      ₹{(entry.value || 0).toLocaleString()}
+              <div className="grid grid-cols-1 gap-3 w-full sm:w-auto">
+                {(graphs.feesObj || []).map((entry, idx) => (
+                  <div key={idx} className="p-4 rounded-xl bg-slate-50/50 border border-slate-100 min-w-[160px] flex items-center justify-between group hover:bg-white hover:shadow-sm transition-all duration-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-1.5 h-6 rounded-full" style={{ backgroundColor: entry.fill }} />
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter leading-none block mb-1">{entry.name}</span>
+                        <div className="text-sm font-black text-slate-900 tracking-tight leading-none italic">
+                          ₹{(entry.value || 0).toLocaleString()}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -415,18 +417,19 @@ export default function DashboardPage() {
           </div>
 
           {/* Test Performance */}
-          <div className="card p-5">
-            <h3 className="section-heading mb-5">
-              <Target size={13} className="text-slate-500"/> Test Performance (Averages)
+          <div className="card p-6 border-slate-200">
+            <h3 className="section-heading mb-6 text-slate-800 font-bold pb-4 border-b border-slate-50">
+              <Target size={14} className="text-slate-400"/>
+              Comparative Academic Performance
             </h3>
-            <div className="h-60 w-full relative min-w-0">
+            <div className="h-64 w-full relative min-h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={graphs.tests} layout="vertical" margin={{ left: 10, right: 30, top: 10, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={true} vertical={false} />
-                  <XAxis type="number" fontSize={11} tickLine={false} axisLine={false} domain={[0, 100]} tickFormatter={(val) => `${val}%`} tick={{ fill: '#94a3b8' }} />
-                  <YAxis type="category" dataKey="name" fontSize={11} tickLine={false} axisLine={false} tickMargin={12} width={100} tick={{ fill: '#64748b', fontWeight: 500 }} />
-                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', fontSize: '13px', fontWeight: '600' }} />
-                  <Bar dataKey="avgScore" fill="#334155" radius={[0, 4, 4, 0]} maxBarSize={20} />
+                <BarChart data={graphs.tests || []} layout="vertical" margin={{ left: 10, right: 30, top: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" horizontal={true} vertical={false} />
+                  <XAxis type="number" fontSize={10} tickLine={false} axisLine={false} domain={[0, 100]} tickFormatter={(val) => `${val}%`} tick={{ fill: '#cbd5e1', fontWeight: 600 }} />
+                  <YAxis type="category" dataKey="name" fontSize={10} tickLine={false} axisLine={false} tickMargin={15} width={110} tick={{ fill: '#475569', fontWeight: 700 }} />
+                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: '700' }} />
+                  <Bar dataKey="avgScore" fill="#1e293b" radius={[0, 6, 6, 0]} maxBarSize={24} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

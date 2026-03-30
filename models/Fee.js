@@ -30,4 +30,7 @@ FeeSchema.index({ institute_id: 1, status: 1 });
 FeeSchema.index({ institute_id: 1, student_id: 1 });
 FeeSchema.index({ institute_id: 1, due_date: 1, status: 1 });
 
+// CRITICAL: Prevent duplicate fees for the same student on the same date
+FeeSchema.index({ student_id: 1, institute_id: 1, due_date: 1 }, { unique: true });
+
 export default mongoose.models.Fee || mongoose.model("Fee", FeeSchema);
