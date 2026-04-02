@@ -5,6 +5,7 @@ import Result from "@/models/Result";
 import Test from "@/models/Test";
 import Student from "@/models/Student";
 import Institute from "@/models/Institute";
+import Notification from "@/models/Notification";
 import { sendEventToN8N } from "@/services/n8n";
 
 export async function POST(req) {
@@ -76,6 +77,17 @@ export async function POST(req) {
       } catch (err) {
         errors.push(`Failed to notify ${studentName}: ${err.message}`);
       }
+    }
+
+    if (sentCount > 0) {
+      await Notification.create({
+        institute_id: inst._id,
+        type: "TEST_RESULT_ALERT",
+        recipient_name: "Class Broadcast",
+        recipient_phone: `Batch: ${test.batch_id?.name || "All"}`,
+        message: `Official test marks for '${test.name}' out of ${test.total_marks} have been successfully broadcasted directly to ${sentCount} students/parents.`,
+        status: "SENT"
+      });
     }
 
     return NextResponse.json({

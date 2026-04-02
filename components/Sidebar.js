@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, GraduationCap, BookOpen, Layers, IndianRupee, CalendarCheck, Calendar, FileText, Settings, PieChart, ChevronRight, HelpCircle } from "lucide-react";
+import { LayoutDashboard, Users, GraduationCap, BookOpen, Layers, IndianRupee, CalendarCheck, Calendar, FileText, Settings, PieChart, ChevronRight, HelpCircle, Bell } from "lucide-react";
 
 const adminLinks = [
   { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
@@ -15,6 +15,7 @@ const adminLinks = [
   { href: "/attendance-calendar", label: "Calendar", Icon: Calendar },
   { href: "/tests", label: "Tests & Results", Icon: FileText },
   { href: "/reports", label: "Reports", Icon: PieChart },
+  { href: "#notifications", label: "Notifications Logs", Icon: Bell },
   { href: "/automation", label: "Automation & Settings", Icon: Settings },
 ];
 
@@ -40,7 +41,7 @@ const roleLinksMap = {
   STUDENT: studentLinks,
 };
 
-export default function Sidebar({ role, userName }) {
+export default function Sidebar({ role, userName, onClose, onOpenNotification }) {
   const pathname = usePathname();
   const links = roleLinksMap[role] || studentLinks;
 
@@ -70,6 +71,13 @@ export default function Sidebar({ role, userName }) {
             <Link
               key={link.href}
               href={link.href}
+              onClick={(e) => {
+                if (link.href === "#notifications") {
+                  e.preventDefault();
+                  if (onOpenNotification) onOpenNotification();
+                }
+                if (onClose) onClose();
+              }}
               className={`flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium transition-all duration-150 group relative ${
                 isActive
                   ? "bg-slate-100 text-slate-900 font-semibold"

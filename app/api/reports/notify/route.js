@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
 import Institute from "@/models/Institute";
+import Notification from "@/models/Notification";
 import { sendEventToN8N } from "@/services/n8n";
 import { GET as getAdminReport } from "../admin/route";
 
@@ -55,6 +56,17 @@ export async function POST(req) {
                     tests: s.tests
                 }
             });
+
+            await Notification.create({
+              institute_id: inst._id,
+              student_id: s.student.id,
+              type: "REPORT_CARD",
+              recipient_name: s.student.name,
+              recipient_phone: s.student.parent_phone,
+              message: `Official Report for ${s.student.name} (${dateFrom} to ${dateTo}) from ${inst.name}. Tests: ${s.tests?.percentage}%, Attendance: ${s.attendance?.percentage}%, Outstanding: ₹${s.fees?.due}.`,
+              status: "SENT"
+            });
+
             sentCount++;
         } catch (err) {
             errors.push(`Failed to send to ${s.student.name}: ${err.message}`);

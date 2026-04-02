@@ -48,28 +48,43 @@ export default function AttendancePage() {
         a.forEach((rec) => { map[rec.student_id?._id || rec.student_id] = rec.status; });
       }
       if (Array.isArray(s)) {
-        s.forEach((st) => { if (!map[st._id]) map[st._id] = "PRESENT"; });
+        s.forEach((st) => { if (!map[st._id]) map[st._id] = "NOT_TAKEN"; });
       }
       setAttendance(map);
     });
   }, [selectedBatch, date]);
 
   function toggle(studentId) {
-    setAttendance((prev) => ({
-      ...prev,
-      [studentId]: prev[studentId] === "PRESENT" ? "ABSENT" : "PRESENT",
-    }));
+    setAttendance((prev) => {
+      const current = prev[studentId] || "NOT_TAKEN";
+      let nextStatus = "NOT_TAKEN";
+      if (current === "NOT_TAKEN") nextStatus = "PRESENT";
+      else if (current === "PRESENT") nextStatus = "ABSENT";
+      else nextStatus = "PRESENT"; // If absent, cycle back to present
+
+      return {
+        ...prev,
+        [studentId]: nextStatus,
+      };
+    });
   }
 
   async function markAll() {
     setSaving(true);
     try {
+      // Filter out NOT_TAKEN records
       const records = students.map((student) => ({
         student_id: student._id,
         batch_id: selectedBatch,
         date,
-        status: attendance[student._id] || "PRESENT",
-      }));
+        status: attendance[student._id] || "NOT_TAKEN",
+      })).filter(r => r.status !== "NOT_TAKEN");
+
+      if (records.length === 0) {
+        toast.error("No attendance marked. Click to toggle attendance.");
+        setSaving(false);
+        return;
+      }
 
       const res = await fetch("/api/attendance/mark", {
         method: "POST",
@@ -168,14 +183,18 @@ export default function AttendancePage() {
                   <tr key={s._id}>
                     <td className="font-semibold text-gray-800">{s.user_id?.name || s.parent_name}</td>
                     <td>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold border ${attendance[s._id] === "PRESENT" ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-red-50 text-red-600 border-red-200"}`}>
-                        {attendance[s._id] || "PRESENT"}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold border ${
+                        attendance[s._id] === "PRESENT" ? "bg-emerald-50 text-emerald-600 border-emerald-200" : 
+                        attendance[s._id] === "ABSENT" ? "bg-red-50 text-red-600 border-red-200" :
+                        "bg-gray-100 text-gray-500 border-gray-200"
+                      }`}>
+                        {attendance[s._id] === "NOT_TAKEN" ? "NOT MARKED" : attendance[s._id] || "NOT MARKED"}
                       </span>
                     </td>
                     {role !== "STUDENT" && (
                     <td>
                       <button onClick={() => toggle(s._id)} className="text-xs font-medium text-slate-700 hover:text-slate-900 transition-colors bg-slate-50 px-3 py-1.5 rounded-md flex items-center gap-1 border border-slate-200 hover:bg-slate-100">
-                        {attendance[s._id] === "PRESENT" ? "Mark Absent" : "Mark Present"}
+                        {attendance[s._id] === "NOT_TAKEN" ? "Mark" : attendance[s._id] === "PRESENT" ? "Mark Absent" : "Mark Present"}
                       </button>
                     </td>
                     )}

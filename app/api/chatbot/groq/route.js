@@ -47,10 +47,46 @@ export async function POST(req) {
       .populate({ path: "student_id", populate: { path: "user_id", select: "name" } })
       .lean();
 
+    // Group ALL fees by student_id for accurate multi-record aggregation
     const now = new Date();
+    const feesByStudent = {};
+    for (const f of allFees) {
+      const sid = f.student_id?._id?.toString() || f.student_id?.toString();
+      if (!sid) continue;
+      if (!feesByStudent[sid]) feesByStudent[sid] = [];
+      feesByStudent[sid].push(f);
+    }
+
     const studentsFull = allStudents.map(s => {
-      const fee = allFees.find(f => f.student_id?._id?.toString() === s._id.toString());
-      const daysOverdue = fee && fee.status !== "PAID" ? Math.max(0, Math.ceil((now - new Date(fee.due_date)) / (1000 * 60 * 60 * 24))) : 0;
+      const studentFees = feesByStudent[s._id.toString()] || [];
+
+      // Tally across ALL fee records for this student
+      let totalPaid = 0, totalDue = 0, totalFee = 0;
+      let overdueCount = 0, overdueAmount = 0;
+      let upcomingCount = 0;
+      let worstStatus = "NO_RECORD";
+
+      for (const f of studentFees) {
+        totalPaid += f.paid_amount || 0;
+        totalDue  += f.due_amount  || 0;
+        totalFee  += f.total_amount || 0;
+
+        if (f.status === "PAID") continue; // skip settled
+        const diffDays = Math.round((new Date(f.due_date) - now) / 86400000);
+        if (diffDays < 0) {
+          overdueCount++;
+          overdueAmount += f.due_amount || 0;
+          worstStatus = "OVERDUE";
+        } else if (diffDays <= 5) {
+          upcomingCount++;
+          if (worstStatus !== "OVERDUE") worstStatus = "UPCOMING";
+        } else {
+          if (worstStatus === "NO_RECORD") worstStatus = "CLEAR";
+        }
+      }
+
+      if (studentFees.length > 0 && worstStatus === "NO_RECORD") worstStatus = "PAID";
+
       return {
         name: s.user_id?.name || "Unknown",
         contact: s.user_id?.phoneOrEmail || "",
@@ -58,11 +94,14 @@ export async function POST(req) {
         parent_name: s.parent_name || "",
         parent_phone: s.parent_phone || "",
         admission_date: s.admission_date ? new Date(s.admission_date).toLocaleDateString("en-CA") : "",
-        fee_total: fee?.total_amount || 0,
-        fee_paid: fee?.paid_amount || 0,
-        fee_due: fee?.due_amount || 0,
-        fee_status: fee?.status || "NO_RECORD",
-        days_overdue: daysOverdue
+        fee_total: totalFee,
+        fee_paid: totalPaid,
+        fee_due: totalDue,           // total unpaid across ALL records
+        fee_outstanding: overdueAmount, // only actually OVERDUE amount
+        fee_status: worstStatus,
+        overdue_count: overdueCount,
+        upcoming_count: upcomingCount,
+        total_records: studentFees.length,
       };
     });
 
@@ -214,8 +253,11 @@ export async function POST(req) {
 
     // 9. Summary stats
     const totalStudents = studentsFull.length;
-    const unpaidCount = studentsFull.filter(s => s.fee_status !== "PAID" && s.fee_status !== "NO_RECORD").length;
-    const totalOutstanding = studentsFull.reduce((sum, s) => sum + s.fee_due, 0);
+    const overdueStudentCount = studentsFull.filter(s => s.fee_status === "OVERDUE").length;
+    const upcomingStudentCount = studentsFull.filter(s => s.fee_status === "UPCOMING").length;
+    const totalRevenuePaid = allFees.reduce((sum, f) => sum + (f.paid_amount || 0), 0);
+    const totalOutstanding = studentsFull.reduce((sum, s) => sum + s.fee_outstanding, 0);
+    const totalUnpaidAll = studentsFull.reduce((sum, s) => sum + s.fee_due, 0);
 
     // ═══════════════════════════════════════════════════════════════════
     // BUILD FULL CONTEXT FOR LLM
@@ -225,9 +267,11 @@ export async function POST(req) {
       today: now.toLocaleDateString("en-CA", { timeZone: 'Asia/Kolkata' }),
       summary: {
         total_students: totalStudents,
-        total_revenue_collected: totalRevenue,
-        unpaid_students: unpaidCount,
-        total_outstanding_balance: totalOutstanding
+        total_revenue_collected: totalRevenuePaid,
+        overdue_students: overdueStudentCount,
+        upcoming_students: upcomingStudentCount,
+        total_outstanding_overdue_only: totalOutstanding,
+        total_unpaid_all: totalUnpaidAll,
       },
       students: studentsFull,
       batches: batchSummary,
@@ -248,11 +292,12 @@ ${JSON.stringify(snapshot)}
 
 RULES:
 1. Answer ONLY using the data above. Never invent or guess facts.
-2. When users ask follow-up questions (e.g. "how much?", "which one?", "name them"), use the CONVERSATION HISTORY to understand what they are referring to, then find the answer in the database snapshot.
-3. Be concise, professional, and use bullet points or tables when listing multiple items.
-4. Format currency as ₹XX,XXX.
-5. If data genuinely does not exist in the snapshot, say so clearly.
-6. You CAN answer questions about: student names, fees, payments, batches, courses, attendance, revenue, defaulters, overdue days, and any comparison or ranking across these dimensions.`;
+2. FEE STATUSES: OVERDUE = due date passed. UPCOMING = due in <=5 days. CLEAR = due in >5 days. PAID = fully settled.
+3. DEFAULTERS = students with fee_status "OVERDUE". Count from students array. Do NOT include UPCOMING or CLEAR.
+4. "Outstanding" = fee_outstanding (overdue amounts only). "Total due" = fee_due (all unpaid records).
+5. Each student has overdue_count (# of overdue records) and upcoming_count fields.
+6. When listing defaulters, scan ALL students in the snapshot for fee_status === "OVERDUE".
+7. Be concise and use bullet points or tables for lists. Format currency as ₹XX,XXX.`;
 
     // Build conversation messages with history
     const chatMessages = [{ role: "system", content: systemPrompt }];

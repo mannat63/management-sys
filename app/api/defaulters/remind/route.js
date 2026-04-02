@@ -7,6 +7,7 @@ import User from "@/models/User";
 
 import Institute from "@/models/Institute";
 import Batch from "@/models/Batch";
+import Notification from "@/models/Notification";
 import { sendEventToN8N } from "@/services/n8n";
 
 export async function POST(req) {
@@ -52,6 +53,16 @@ export async function POST(req) {
             due_date: new Date(new Date().setDate(new Date().getDate() - fee.days_overdue)).toLocaleDateString("en-CA"), // fallback approximate date
             days_overdue: fee.days_overdue
           }
+        });
+        
+        await Notification.create({
+          institute_id: inst._id,
+          student_id: fee.student_id,
+          type: "FEE_REMINDER",
+          recipient_name: fee.name,
+          recipient_phone: fee.parent_phone,
+          message: `Dear Parent, reminder from ${inst.name}: outstanding fees of ₹${fee.due_amount} for ${fee.name} are overdue by ${fee.days_overdue} days. Please clear them.`,
+          status: "SENT"
         });
         
         sentCount++;

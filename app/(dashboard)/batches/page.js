@@ -18,6 +18,7 @@ export default function BatchesPage() {
   const [editForm, setEditForm] = useState({ name: "", course_id: "", teacher_id: "", startTime: "", endTime: "" });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(null);
+  const [creating, setCreating] = useState(false);
 
   function formatTime(time24) {
     if (!time24) return "";
@@ -63,22 +64,29 @@ export default function BatchesPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    const formattedTiming = `${formatTime(form.startTime)} - ${formatTime(form.endTime)}`;
-    const payload = { name: form.name, course_id: form.course_id, teacher_id: form.teacher_id, timing: formattedTiming };
-    const res = await fetch("/api/batches", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      setShowForm(false);
-      setForm({ name: "", course_id: "", teacher_id: "", startTime: "", endTime: "" });
-      const updated = await fetch("/api/batches").then((r) => r.json());
-      setBatches(Array.isArray(updated) ? updated : []);
-      toast.success("Batch created");
-    } else {
-      const err = await res.json();
-      toast.error(err.error || "Failed to create batch");
+    setCreating(true);
+    try {
+      const formattedTiming = `${formatTime(form.startTime)} - ${formatTime(form.endTime)}`;
+      const payload = { name: form.name, course_id: form.course_id, teacher_id: form.teacher_id, timing: formattedTiming };
+      const res = await fetch("/api/batches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        setShowForm(false);
+        setForm({ name: "", course_id: "", teacher_id: "", startTime: "", endTime: "" });
+        const updated = await fetch("/api/batches").then((r) => r.json());
+        setBatches(Array.isArray(updated) ? updated : []);
+        toast.success("Batch created");
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to create batch");
+      }
+    } catch {
+      toast.error("Network error");
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -155,6 +163,7 @@ export default function BatchesPage() {
           <button
             onClick={() => setShowForm(!showForm)}
             className={`btn-primary ${showForm ? "bg-gray-500 hover:bg-gray-600 !shadow-none" : ""}`}
+            disabled={creating}
           >
             {showForm ? (
               <>
@@ -181,6 +190,7 @@ export default function BatchesPage() {
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               className="input-field"
+              disabled={creating}
             />
           </div>
           <div>
@@ -192,6 +202,7 @@ export default function BatchesPage() {
               value={form.course_id}
               onChange={(e) => setForm({ ...form, course_id: e.target.value })}
               className="input-field"
+              disabled={creating}
             >
               <option value="">Select Course</option>
               {courses.map((c) => (
@@ -210,6 +221,7 @@ export default function BatchesPage() {
               value={form.teacher_id}
               onChange={(e) => setForm({ ...form, teacher_id: e.target.value })}
               className="input-field"
+              disabled={creating}
             >
               <option value="">Select Teacher</option>
               {teachers.map((t) => (
@@ -230,6 +242,7 @@ export default function BatchesPage() {
                 value={form.startTime}
                 onChange={(e) => setForm({ ...form, startTime: e.target.value })}
                 className="input-field"
+                disabled={creating}
               />
               <span className="text-gray-400 font-bold text-sm">to</span>
               <input
@@ -238,11 +251,12 @@ export default function BatchesPage() {
                 value={form.endTime}
                 onChange={(e) => setForm({ ...form, endTime: e.target.value })}
                 className="input-field"
+                disabled={creating}
               />
             </div>
           </div>
-          <button type="submit" className="btn-primary sm:col-span-2 mt-2">
-            Save Batch
+          <button type="submit" className="btn-primary sm:col-span-2 mt-2" disabled={creating}>
+            {creating ? "Saving..." : "Save Batch"}
           </button>
         </form>
       )}

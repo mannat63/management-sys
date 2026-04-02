@@ -7,6 +7,7 @@ export default function CoursesPage() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: "", description: "", base_fee: "" });
 
   useEffect(() => {
@@ -15,12 +16,17 @@ export default function CoursesPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    const res = await fetch("/api/courses", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-    if (res.ok) {
-      setShowForm(false);
-      setForm({ name: "", description: "", base_fee: "" });
-      const updated = await fetch("/api/courses").then((r) => r.json());
-      setCourses(Array.isArray(updated) ? updated : []);
+    setCreating(true);
+    try {
+      const res = await fetch("/api/courses", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      if (res.ok) {
+        setShowForm(false);
+        setForm({ name: "", description: "", base_fee: "" });
+        const updated = await fetch("/api/courses").then((r) => r.json());
+        setCourses(Array.isArray(updated) ? updated : []);
+      }
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -51,21 +57,21 @@ export default function CoursesPage() {
         <form onSubmit={handleSubmit} className="card bg-gray-50/50 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Course Name</label>
-            <input placeholder="e.g. JEE Mains Masterclass" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-field" />
+            <input placeholder="e.g. JEE Mains Masterclass" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-field" disabled={creating} />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Base Fee</label>
             <div className="relative">
               <span className="absolute left-3.5 top-2.5 text-gray-400 font-bold">₹</span>
-              <input type="number" placeholder="Amount" required value={form.base_fee} onChange={(e) => setForm({ ...form, base_fee: e.target.value })} className="input-field pl-8" />
+              <input type="number" placeholder="Amount" required value={form.base_fee} onChange={(e) => setForm({ ...form, base_fee: e.target.value })} className="input-field pl-8" disabled={creating} />
             </div>
           </div>
           <div className="md:col-span-2">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Description</label>
-            <textarea placeholder="Course description & included features..." required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="input-field min-h-24 resize-none" />
+            <textarea placeholder="Course description & included features..." required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="input-field min-h-24 resize-none" disabled={creating} />
           </div>
           <div className="md:col-span-2 flex justify-end">
-             <button type="submit" className="btn-primary">Save Course</button>
+             <button type="submit" className="btn-primary" disabled={creating}>{creating ? "Saving..." : "Save Course"}</button>
           </div>
         </form>
       )}

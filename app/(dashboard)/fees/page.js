@@ -17,7 +17,10 @@ function today() { return midnight(new Date()); }
 
 function feeStatus(fee) {
   if (fee.status === "PAID") return "PAID";
-  return today() > midnight(fee.due_date) ? "OVERDUE" : "UPCOMING";
+  const diffDays = Math.round((midnight(fee.due_date) - today()) / 86400000);
+  if (diffDays < 0) return "OVERDUE";
+  if (diffDays <= 5) return "UPCOMING";
+  return "CLEAR";
 }
 
 function daysLabel(fee) {
@@ -34,9 +37,10 @@ function StudentFeeCard({ student, fees, onOpen }) {
 
   // Summary stats
   const totalPaid  = fees.reduce((s, f) => s + (f.paid_amount || 0), 0);
-  const totalDue   = fees.reduce((s, f) => s + (f.due_amount || 0), 0);
   const overdue    = fees.filter(f => feeStatus(f) === "OVERDUE");
   const upcoming   = fees.filter(f => feeStatus(f) === "UPCOMING");
+  
+  const outstandingDue = overdue.reduce((s, f) => s + (f.due_amount || 0), 0);
 
   const statusColor =
     overdue.length > 0 ? "border-red-200 bg-red-50/30" :
@@ -74,8 +78,8 @@ function StudentFeeCard({ student, fees, onOpen }) {
           <div className="text-sm font-bold text-emerald-600">₹{totalPaid.toLocaleString()}</div>
         </div>
         <div className="bg-white rounded-md p-2 border border-gray-100">
-          <div className="text-[10px] text-gray-400 uppercase font-semibold">Due</div>
-          <div className="text-sm font-bold text-red-500">₹{totalDue.toLocaleString()}</div>
+          <div className="text-[10px] text-gray-400 uppercase font-semibold">Outstanding</div>
+          <div className="text-sm font-bold text-red-500">₹{outstandingDue.toLocaleString()}</div>
         </div>
         <div className="bg-white rounded-md p-2 border border-gray-100">
           <div className="text-[10px] text-gray-400 uppercase font-semibold">Records</div>
@@ -93,11 +97,14 @@ function FeeModal({ student, fees, onClose, onRefresh, role }) {
   const [payForm, setPayForm]   = useState({ fee_id: "", student_id: "", amount: "", method: "CASH" });
   const [reminding, setReminding] = useState(false);
 
+  const [paying, setPaying]     = useState(false);
+
   // Sort chronologically
   const sorted = [...fees].sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
 
   async function handlePayment(e, fee) {
     e.preventDefault();
+    setPaying(true);
     try {
       const res = await fetch("/api/payments", {
         method: "POST",
@@ -116,12 +123,15 @@ function FeeModal({ student, fees, onClose, onRefresh, role }) {
       }
     } catch {
       toast.error("Network error");
+    } finally {
+      setPaying(false);
     }
   }
 
   async function handleSettle(fee) {
     const ok = confirm(`Settle ₹${fee.due_amount.toLocaleString()} for ${name}?`);
     if (!ok) return;
+    setPaying(true);
     try {
       const res = await fetch("/api/payments", {
         method: "POST",
@@ -140,6 +150,7 @@ function FeeModal({ student, fees, onClose, onRefresh, role }) {
     } catch {
       toast.error("Network error");
     }
+    setPaying(false);
   }
 
   async function handleRemind(fee) {
@@ -171,6 +182,7 @@ function FeeModal({ student, fees, onClose, onRefresh, role }) {
     PAID:     { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700", dot: "bg-emerald-500", label: "PAID" },
     OVERDUE:  { bg: "bg-red-50",     border: "border-red-200",     text: "text-red-700",     dot: "bg-red-500",     label: "OVERDUE" },
     UPCOMING: { bg: "bg-amber-50",   border: "border-amber-200",   text: "text-amber-700",   dot: "bg-amber-400",   label: "UPCOMING" },
+    CLEAR:    { bg: "bg-emerald-50/20", border: "border-emerald-100", text: "text-emerald-600", dot: "bg-emerald-300", label: "CLEAR" },
   };
 
   return (
@@ -194,8 +206,9 @@ function FeeModal({ student, fees, onClose, onRefresh, role }) {
         {/* Summary Strip */}
         {(() => {
           const totalPaid = sorted.reduce((s, f) => s + (f.paid_amount || 0), 0);
-          const totalDue  = sorted.reduce((s, f) => s + (f.due_amount  || 0), 0);
-          const overdueCount = sorted.filter(f => feeStatus(f) === "OVERDUE").length;
+          const overdueFees = sorted.filter(f => feeStatus(f) === "OVERDUE");
+          const totalOutstanding = overdueFees.reduce((s, f) => s + (f.due_amount  || 0), 0);
+          const overdueCount = overdueFees.length;
           return (
             <div className="px-6 py-3 border-b border-gray-100 grid grid-cols-3 gap-4 bg-white">
               <div className="text-center">
@@ -204,7 +217,7 @@ function FeeModal({ student, fees, onClose, onRefresh, role }) {
               </div>
               <div className="text-center">
                 <div className="text-[10px] text-gray-400 uppercase font-semibold">Outstanding</div>
-                <div className="text-base font-bold text-red-500">₹{totalDue.toLocaleString()}</div>
+                <div className="text-base font-bold text-red-500">₹{totalOutstanding.toLocaleString()}</div>
               </div>
               <div className="text-center">
                 <div className="text-[10px] text-gray-400 uppercase font-semibold">Overdue Months</div>
@@ -269,29 +282,30 @@ function FeeModal({ student, fees, onClose, onRefresh, role }) {
                           </button>
                         </div>
                         <select value={payForm.method} onChange={e => setPayForm({ ...payForm, method: e.target.value })}
-                          className="px-2 py-1.5 border border-gray-200 rounded-md text-xs outline-none bg-white">
+                          className="px-2 py-1.5 border border-gray-200 rounded-md text-xs outline-none bg-white" disabled={paying}>
                           <option value="CASH">CASH</option>
                           <option value="UPI">UPI</option>
                           <option value="BANK_TRANSFER">BANK</option>
                         </select>
-                        <button type="submit" className="px-3 py-1.5 bg-emerald-600 text-white font-semibold rounded-md text-xs hover:bg-emerald-700">Save</button>
+                        <button type="submit" className="px-3 py-1.5 bg-emerald-600 text-white font-semibold rounded-md text-xs hover:bg-emerald-700 disabled:opacity-50" disabled={paying}>Save</button>
                         <button type="button" onClick={() => setShowPay(null)} className="px-2 py-1.5 text-gray-400 hover:text-gray-600"><X size={14} /></button>
                       </form>
                     ) : (
                       <div className="flex items-center gap-2">
                         <button
+                          disabled={paying || reminding}
                           onClick={() => { setShowPay(fee._id); setPayForm({ fee_id: fee._id, student_id: student._id, amount: fee.due_amount, method: "CASH" }); }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 text-xs font-semibold rounded-md transition-all shadow-sm"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 text-xs font-semibold rounded-md transition-all shadow-sm disabled:opacity-50"
                         >
                           <IndianRupee size={12} /> Record Pay
                         </button>
-                        <button onClick={() => handleSettle(fee)}
-                          className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-md hover:bg-emerald-700 shadow-sm">
-                          Settle
+                        <button onClick={() => handleSettle(fee)} disabled={paying || reminding}
+                          className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-md hover:bg-emerald-700 shadow-sm disabled:opacity-50">
+                          {paying ? "..." : "Settle"}
                         </button>
-                        <button onClick={() => handleRemind(fee)} disabled={reminding}
+                        <button onClick={() => handleRemind(fee)} disabled={reminding || paying}
                           className="px-3 py-1.5 bg-white border border-amber-200 text-amber-700 text-xs font-bold rounded-md hover:bg-amber-50 shadow-sm disabled:opacity-60 flex items-center gap-1">
-                          <Bell size={11} /> Remind
+                          <Bell size={11} /> {reminding ? "..." : "Remind"}
                         </button>
                       </div>
                     )}
@@ -328,6 +342,7 @@ export default function FeesPage() {
   const [search, setSearch]     = useState("");
   const [filter, setFilter]     = useState("ALL"); // ALL | OVERDUE | UPCOMING | CLEAR
   const [showForm, setShowForm] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [form, setForm]         = useState({ student_id: "", total_amount: "", due_date: "" });
   const [defaulters, setDefaulters] = useState([]);
   const [reminding, setReminding]   = useState(false);
@@ -359,6 +374,7 @@ export default function FeesPage() {
 
   async function handleCreateFee(e) {
     e.preventDefault();
+    setCreating(true);
     try {
       const res = await fetch("/api/fees", {
         method: "POST",
@@ -376,6 +392,8 @@ export default function FeesPage() {
       }
     } catch {
       toast.error("Network error");
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -431,7 +449,11 @@ export default function FeesPage() {
       if (filter === "ALL") return true;
       if (filter === "OVERDUE") return studentFees.some(f => feeStatus(f) === "OVERDUE");
       if (filter === "UPCOMING") return studentFees.some(f => feeStatus(f) === "UPCOMING");
-      if (filter === "CLEAR") return studentFees.every(f => feeStatus(f) === "PAID") && studentFees.length > 0;
+      if (filter === "CLEAR") {
+        const hasOverdue = studentFees.some(f => feeStatus(f) === "OVERDUE");
+        const hasUpcoming = studentFees.some(f => feeStatus(f) === "UPCOMING");
+        return !hasOverdue && !hasUpcoming;
+      }
       return true;
     });
   }, [students, search, filter, feesByStudent]);
@@ -479,7 +501,7 @@ export default function FeesPage() {
             { label: "Total Students", value: students.length, icon: <TrendingUp size={14} />, color: "text-slate-700" },
             { label: "Overdue", value: overdueStudents, icon: <AlertCircle size={14} />, color: "text-red-600" },
             { label: "Total Collected", value: `₹${fees.reduce((s, f) => s + (f.paid_amount || 0), 0).toLocaleString()}`, icon: <CheckCircle size={14} />, color: "text-emerald-600" },
-            { label: "Outstanding", value: `₹${fees.filter(f => feeStatus(f) !== "PAID").reduce((s, f) => s + (f.due_amount || 0), 0).toLocaleString()}`, icon: <Wallet size={14} />, color: "text-red-500" },
+            { label: "Outstanding", value: `₹${fees.filter(f => feeStatus(f) === "OVERDUE").reduce((s, f) => s + (f.due_amount || 0), 0).toLocaleString()}`, icon: <Wallet size={14} />, color: "text-red-500" },
           ].map((c, i) => (
             <div key={i} className="card !py-3 !px-4 flex items-center gap-3">
               <span className={`${c.color} opacity-70`}>{c.icon}</span>
@@ -497,7 +519,7 @@ export default function FeesPage() {
         <form onSubmit={handleCreateFee} className="card bg-gray-50 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Student</label>
-            <select required value={form.student_id} onChange={e => setForm({ ...form, student_id: e.target.value })} className="input-field">
+            <select required value={form.student_id} onChange={e => setForm({ ...form, student_id: e.target.value })} className="input-field" disabled={creating}>
               <option value="">Select Student</option>
               {students.map(s => <option key={s._id} value={s._id}>{s.user_id?.name || s.parent_name}</option>)}
             </select>
@@ -506,15 +528,17 @@ export default function FeesPage() {
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Amount</label>
             <div className="relative">
               <span className="absolute left-3.5 top-2.5 text-gray-400 font-semibold">₹</span>
-              <input type="number" placeholder="Amount" required value={form.total_amount} onChange={e => setForm({ ...form, total_amount: e.target.value })} className="input-field pl-8" />
+              <input type="number" placeholder="Amount" required value={form.total_amount} onChange={e => setForm({ ...form, total_amount: e.target.value })} className="input-field pl-8" disabled={creating} />
             </div>
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Due Date</label>
-            <input type="date" required value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} className="input-field" />
+            <input type="date" required value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} className="input-field" disabled={creating} />
           </div>
           <div className="flex items-end">
-            <button type="submit" className="btn-primary w-full"><CheckCircle size={15} /> Save</button>
+            <button type="submit" className="btn-primary w-full" disabled={creating}>
+              {creating ? "Saving..." : <><CheckCircle size={15} /> Save</>}
+            </button>
           </div>
         </form>
       )}

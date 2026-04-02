@@ -8,6 +8,7 @@ export default function TeachersPage() {
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: "", phoneOrEmail: "+91 " });
   const [role, setRole] = useState("");
 
@@ -31,20 +32,25 @@ export default function TeachersPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    const res = await fetch("/api/teachers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    if (res.ok) {
-      setShowForm(false);
-      setForm({ name: "", phoneOrEmail: "+91 " });
-      const updated = await fetch("/api/teachers").then((r) => r.json());
-      setTeachers(Array.isArray(updated) ? updated : []);
-      toast.success("Teacher added successfully");
-    } else {
-      const err = await res.json();
-      toast.error(err.error || "Failed to add teacher");
+    setCreating(true);
+    try {
+      const res = await fetch("/api/teachers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        setShowForm(false);
+        setForm({ name: "", phoneOrEmail: "+91 " });
+        const updated = await fetch("/api/teachers").then((r) => r.json());
+        setTeachers(Array.isArray(updated) ? updated : []);
+        toast.success("Teacher added successfully");
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to add teacher");
+      }
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -143,6 +149,7 @@ export default function TeachersPage() {
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               className="input-field"
+              disabled={creating}
             />
           </div>
           <div>
@@ -155,10 +162,11 @@ export default function TeachersPage() {
               value={form.phoneOrEmail}
               onChange={(e) => setForm({ ...form, phoneOrEmail: e.target.value })}
               className="input-field"
+              disabled={creating}
             />
           </div>
-          <button type="submit" className="btn-primary h-[42px]">
-            Save Teacher
+          <button type="submit" className="btn-primary h-[42px]" disabled={creating}>
+            {creating ? "Saving..." : "Save Teacher"}
           </button>
         </form>
       )}

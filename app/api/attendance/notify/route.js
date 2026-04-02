@@ -6,6 +6,7 @@ import Student from "@/models/Student";
 import User from "@/models/User";
 import Batch from "@/models/Batch";
 import Institute from "@/models/Institute";
+import Notification from "@/models/Notification";
 import { sendEventToN8N } from "@/services/n8n";
 
 export async function POST(req) {
@@ -78,6 +79,17 @@ export async function POST(req) {
               status: "ABSENT"
             }
           });
+
+          await Notification.create({
+            institute_id: inst._id,
+            student_id: student._id,
+            type: "ATTENDANCE_ALERT",
+            recipient_name: studentName,
+            recipient_phone: parentPhone,
+            message: `Dear Parent, your child ${studentName} was marked ABSENT for ${batch.name} on ${new Date(date).toLocaleDateString("en-GB")}. From ${inst.name}.`,
+            status: "SENT"
+          });
+
           sentCount++;
         }
       } catch (err) {

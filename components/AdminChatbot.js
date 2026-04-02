@@ -20,14 +20,10 @@ export default function AdminChatbot({ role }) {
   const [inputText, setInputText] = useState("");
   const messagesEndRef = useRef(null);
 
-  // Only render for ADMIN
-  if (role !== "ADMIN") return null;
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (isOpen) scrollToBottom();
   }, [messages, isOpen]);
@@ -72,6 +68,9 @@ export default function AdminChatbot({ role }) {
     setInputText("");
     sendToAI(queryText);
   }
+
+  // Only render for ADMIN
+  if (role !== "ADMIN") return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-50">

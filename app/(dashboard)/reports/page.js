@@ -208,16 +208,16 @@ export default function ReportsPage() {
           </div>
 
           {/* Student Table */}
-          <div className="card !p-0 overflow-hidden">
-            <div className="p-4 border-b border-gray-200 bg-gray-50">
-              <h2 className="font-semibold text-gray-800 text-sm">Detailed Student Aggregation</h2>
+          <div className="card !p-0 overflow-hidden print:overflow-visible print:w-full print:break-inside-[avoid-page]">
+            <div className="p-4 border-b border-gray-200 bg-gray-50 print:bg-transparent print:border-b-2 print:border-gray-800">
+              <h2 className="font-semibold text-gray-800 text-sm print:text-lg">Detailed Student Aggregation</h2>
             </div>
-            <div className="overflow-x-auto">
-              <table className="data-table !text-sm">
+            <div className="overflow-x-auto print:overflow-visible">
+              <table className="data-table !text-sm print:w-full print:table-fixed">
                 <thead>
                   <tr>
-                    <th>Student Name</th>
-                    <th>Batch</th>
+                    <th className="print:w-1/4">Student Name</th>
+                    <th className="print:w-1/4">Batch</th>
                     <th className="text-right">Attendance</th>
                     <th className="text-right">Test Avg</th>
                     <th className="text-right">Rank</th>
@@ -320,7 +320,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Academic */}
-          <div className="card">
+          <div className="card print:break-inside-[avoid-page]">
             <div className="flex justify-between items-end mb-5 border-b border-gray-200 pb-4">
               <h3 className="text-sm font-semibold flex items-center gap-2 text-gray-800"><FileText size={16} className="text-slate-500"/> Academic Performance</h3>
               <div className="text-right">
@@ -329,8 +329,8 @@ export default function ReportsPage() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+            <div className="overflow-x-auto print:overflow-visible">
+              <table className="w-full text-left border-collapse print:table-fixed">
                 <thead>
                   <tr className="border-b border-gray-200 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
                     <th className="py-2.5 px-2">Test Name</th>
