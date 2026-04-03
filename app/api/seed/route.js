@@ -51,7 +51,7 @@ export async function POST(req) {
 
     // 4. Students (Exactly 10)
     const studentData = [
-      { name: "Arjun Bansal", phone: "coachman9606@gmail.com", parent: "Rakesh Bansal", parentPhone: "+911000000001", batch: batchJEE._id },
+      { name: "Victor Camper", phone: "campervictor52@gmail.com", parent: "Mr. Camper", parentPhone: "+911000000001", batch: batchJEE._id },
       { name: "Kavya Singh", phone: "kavya@test.com", parent: "Vikram Singh", parentPhone: "+911000000002", batch: batchJEE._id },
       { name: "Vihaan Iyer", phone: "vihaan@test.com", parent: "Rajesh Iyer", parentPhone: "+911000000003", batch: batchJEE._id },
       { name: "Ananya Sharma", phone: "ananya@test.com", parent: "Deepak Sharma", parentPhone: "+911000000004", batch: batchJEE._id },
@@ -119,7 +119,7 @@ export async function POST(req) {
 
     for (let i = 0; i < students.length; i++) {
         const student = students[i];
-        const isAbsentArjun = student.parent_name === "Rakesh Bansal";
+        const isAbsentArjun = student.parent_name === "Mr. Camper";
         
         const start = new Date(student.admission_date);
         start.setUTCHours(0, 0, 0, 0);
