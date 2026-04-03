@@ -50,12 +50,12 @@ export default function Sidebar({ role, userName, onClose, onOpenNotification })
       {/* Brand */}
       <div className="px-5 py-4 border-b border-gray-100 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1e3a5f] to-[#2d5a87] text-white flex items-center justify-center font-bold text-sm shadow-sm">
-            α
+          <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm overflow-hidden border border-gray-100">
+            <img src="/logo.png" alt="Alpha Coaching" className="w-full h-full object-cover" />
           </div>
-          <div>
-            <span className="font-bold text-gray-900 text-sm leading-tight block">Alpha Coaching</span>
-            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.15em]">Management</span>
+          <div className="flex flex-col">
+            <span className="font-extrabold text-[#111827] text-[15px] leading-tight tracking-tight">Alpha Coaching</span>
+            <span className="text-[9px] font-bold text-[#6B7280] uppercase tracking-[0.2em] mt-0.5">Academic Excellence</span>
           </div>
         </div>
       </div>
@@ -98,7 +98,7 @@ export default function Sidebar({ role, userName, onClose, onOpenNotification })
       {/* Help */}
       <div className="px-3 pb-2 flex-shrink-0">
         <a
-          href="https://wa.me/919606000000?text=Hi%2C%20I%20need%20help%20with%20Alpha%20Coaching%20System"
+          href="https://wa.me/919509728788?text=Hi%2C%20I%20need%20help%20with%20Alpha%20Coaching%20System"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium text-gray-400 hover:text-[#1e3a5f] hover:bg-blue-50/50 transition-all duration-150"

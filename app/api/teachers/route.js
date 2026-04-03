@@ -33,11 +33,13 @@ export async function POST(req) {
     const authUser = await requireRole(["ADMIN"]);
 
     const body = await req.json();
-    const { name, phoneOrEmail } = body;
+    const { name, email, phone } = body;
+
+    const finalContact = email?.trim() ? email.trim() : phone?.trim();
 
     const user = await User.create({
       name,
-      phoneOrEmail,
+      phoneOrEmail: finalContact,
       role: "TEACHER",
       institute_id: authUser.institute_id,
     });

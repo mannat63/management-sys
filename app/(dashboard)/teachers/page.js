@@ -9,12 +9,12 @@ export default function TeachersPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ name: "", phoneOrEmail: "+91 " });
+  const [form, setForm] = useState({ name: "", email: "", phone: "+91 " });
   const [role, setRole] = useState("");
 
   // Edit state
   const [editId, setEditId] = useState(null);
-  const [editForm, setEditForm] = useState({ name: "", phoneOrEmail: "" });
+  const [editForm, setEditForm] = useState({ name: "", email: "", phone: "+91 " });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(null);
 
@@ -41,7 +41,7 @@ export default function TeachersPage() {
       });
       if (res.ok) {
         setShowForm(false);
-        setForm({ name: "", phoneOrEmail: "+91 " });
+        setForm({ name: "", email: "", phone: "+91 " });
         const updated = await fetch("/api/teachers").then((r) => r.json());
         setTeachers(Array.isArray(updated) ? updated : []);
         toast.success("Teacher added successfully");
@@ -154,13 +154,27 @@ export default function TeachersPage() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-              Email / Phone
+              Email
             </label>
             <input
-              placeholder="Contact info"
+              placeholder="Email address"
+              type="email"
               required
-              value={form.phoneOrEmail}
-              onChange={(e) => setForm({ ...form, phoneOrEmail: e.target.value })}
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              className="input-field"
+              disabled={creating}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+              Phone Number
+            </label>
+            <input
+              placeholder="Phone Number"
+              required
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
               className="input-field"
               disabled={creating}
             />
@@ -193,10 +207,18 @@ export default function TeachersPage() {
                   />
                   <input
                     required
-                    placeholder="Email / Phone"
-                    value={editForm.phoneOrEmail}
-                    onChange={(e) => setEditForm({ ...editForm, phoneOrEmail: e.target.value })}
-                    className="input-field flex-1"
+                    type="email"
+                    placeholder="Email"
+                    value={editForm.email}
+                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                    className="input-field flex-1 max-w-[150px]"
+                  />
+                  <input
+                    required
+                    placeholder="Phone"
+                    value={editForm.phone}
+                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                    className="input-field flex-1 max-w-[150px]"
                   />
                 </div>
                 <div className="flex gap-2 justify-end">
@@ -243,7 +265,8 @@ export default function TeachersPage() {
                         setEditId(t._id);
                         setEditForm({
                           name: t.user_id?.name || "",
-                          phoneOrEmail: t.user_id?.phoneOrEmail || "",
+                          email: t.user_id?.phoneOrEmail?.includes('@') ? t.user_id?.phoneOrEmail : "",
+                          phone: t.user_id?.phoneOrEmail?.includes('@') ? "" : (t.user_id?.phoneOrEmail || "+91 "),
                         });
                       }}
                       className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors"

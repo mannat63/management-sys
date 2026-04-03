@@ -97,18 +97,18 @@ export default function ReportsPage() {
       {/* ─── FILTERS ─── */}
       <div className="print:hidden card flex flex-col md:flex-row gap-4 items-end justify-between">
         <div className="flex flex-wrap items-end gap-3 w-full md:w-auto">
-          <div>
+          <div className="flex-1 min-w-[130px]">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">From Date</label>
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="input-field max-w-[150px]" />
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="input-field w-full md:max-w-[150px]" />
           </div>
-          <div>
+          <div className="flex-1 min-w-[130px]">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">To Date</label>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="input-field max-w-[150px]" />
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="input-field w-full md:max-w-[150px]" />
           </div>
           {role === "ADMIN" && (
-            <div>
+            <div className="flex-1 min-w-[140px]">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Batch</label>
-              <select value={batchId} onChange={e => setBatchId(e.target.value)} className="input-field max-w-[200px]">
+              <select value={batchId} onChange={e => setBatchId(e.target.value)} className="input-field w-full md:max-w-[200px]">
                 <option value="">All Batches</option>
                 {Array.isArray(batches) && batches.map(b => (
                   <option key={b._id} value={b._id}>{b.name}</option>
@@ -116,7 +116,7 @@ export default function ReportsPage() {
               </select>
             </div>
           )}
-          <button onClick={() => generateReport(role)} disabled={loading} className="btn-primary mb-0.5">
+          <button onClick={() => generateReport(role)} disabled={loading} className="btn-primary w-full sm:w-auto mb-0.5">
             {loading ? "Generating..." : "Apply Filters"}
           </button>
         </div>

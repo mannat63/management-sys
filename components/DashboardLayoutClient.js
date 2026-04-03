@@ -9,6 +9,40 @@ import { Toaster } from "react-hot-toast";
 import { Menu, Bell } from "lucide-react";
 import { usePathname } from "next/navigation";
 
+// Global Fetch Cache to reduce loading times across all panels
+if (typeof window !== "undefined" && !window.__fetch_patched) {
+  const originalFetch = window.fetch;
+  const cache = new Map();
+  window.fetch = async (url, options) => {
+    const isGet = !options || !options.method || options.method.toUpperCase() === 'GET';
+    const isApi = typeof url === 'string' && (url.startsWith('/api/') || url.includes('/api/'));
+    const skipCache = typeof url === 'string' && (url.includes('/api/me') || url.includes('/api/chatbot'));
+
+    if (isGet && isApi && !skipCache && (!options || options.cache !== 'no-store')) {
+      if (cache.has(url)) {
+        return new Response(new Blob([cache.get(url)]), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      const res = await originalFetch(url, options);
+      if (res.ok) {
+        const cloned = res.clone();
+        try {
+          const text = await cloned.text();
+          cache.set(url, text);
+        } catch(e){}
+      }
+      return res;
+    }
+    
+    // Invalidate cache on mutations to keep data fresh
+    if (!isGet && isApi) {
+      cache.clear();
+    }
+    
+    return originalFetch(url, options);
+  };
+  window.__fetch_patched = true;
+}
+
 export default function DashboardLayoutClient({ children, role, userName }) {
   const pathname = usePathname();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -42,27 +76,30 @@ export default function DashboardLayoutClient({ children, role, userName }) {
 
   return (
     <div className="flex h-screen bg-[#f5f6f8] overflow-hidden">
+      {/* Sidebar Overlay */}
+      <div 
+        className={`fixed inset-0 bg-black/40 z-30 md:hidden transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`} 
+        onClick={() => setIsSidebarOpen(false)} 
+      />
+      
       {/* Sidebar */}
-      {isSidebarOpen && (
-        <>
-          {/* Mobile overlay — click outside to close */}
-          <div
-            className="fixed inset-0 bg-black/40 z-30 md:hidden"
-            onClick={() => setIsSidebarOpen(false)}
-          />
-          <div className="fixed inset-y-0 left-0 z-40 md:relative md:z-auto flex-shrink-0">
-            <Sidebar
-              role={role}
-              userName={userName}
-              onClose={() => setIsSidebarOpen(false)}
-              onOpenNotification={() => {
-                setIsNotifOpen(true);
-                setIsSidebarOpen(false);
-              }}
-            />
-          </div>
-        </>
-      )}
+      <div 
+        className={`fixed inset-y-0 left-0 z-40 bg-white md:bg-transparent md:relative md:z-auto flex-shrink-0 transition-transform duration-300 ease-in-out md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      >
+        <Sidebar
+          role={role}
+          userName={userName}
+          onClose={() => {
+            if (typeof window !== "undefined" && window.innerWidth < 768) {
+              setIsSidebarOpen(false);
+            }
+          }}
+          onOpenNotification={() => {
+            setIsNotifOpen(true);
+            setIsSidebarOpen(false);
+          }}
+        />
+      </div>
 
       {/* Content Area */}
       <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
@@ -72,10 +109,10 @@ export default function DashboardLayoutClient({ children, role, userName }) {
 
         <header className="sticky top-0 z-20 bg-white border-b border-gray-200 px-4 md:px-8 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
-            {/* Hamburger — works on all screen sizes */}
+            {/* Hamburger — hidden on desktop */}
             <button
               onClick={() => setIsSidebarOpen(prev => !prev)}
-              className="p-1.5 -ml-1.5 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+              className="p-1.5 -ml-1.5 text-gray-600 hover:bg-gray-100 rounded-md transition-colors md:hidden"
             >
               <Menu size={22} />
             </button>

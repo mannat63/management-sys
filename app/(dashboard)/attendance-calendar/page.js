@@ -230,7 +230,7 @@ export default function AttendanceCalendarPage() {
           </div>
           <div className="grid grid-cols-7 gap-2.5">
             {days.map((dayDate, idx) => {
-              if (!dayDate) return <div key={`empty-${idx}`} className="h-24 rounded-xl bg-gray-50/30 border border-gray-100 border-dashed" />;
+              if (!dayDate) return <div key={`empty-${idx}`} className="relative min-h-[60px] aspect-square md:aspect-auto md:h-24 rounded-lg bg-gray-50/50 border border-gray-100 border-dashed" />;
               
               const isToday = dayDate.getDate() === today.getDate() && 
                               dayDate.getMonth() === today.getMonth() && 
@@ -240,7 +240,7 @@ export default function AttendanceCalendarPage() {
                 <div
                   key={dayDate.toISOString()}
                   onClick={() => openPanel(dayDate)}
-                  className={`relative h-24 rounded-lg border p-3 flex flex-col cursor-pointer transition-all duration-200 group
+                  className={`relative min-h-[60px] aspect-square md:aspect-auto md:h-24 rounded-lg border p-2 md:p-3 flex flex-col cursor-pointer transition-all duration-300 ease-in-out group
                     ${isToday ? 'border-slate-400 bg-slate-50 shadow-sm shadow-slate-100' : 'border-gray-200 bg-white hover:border-slate-300 hover:shadow-md'}
                   `}
                 >
