@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
+import { ArrowRight } from "lucide-react";
 
 export default function OnboardPage() {
   const router = useRouter();
@@ -85,8 +86,12 @@ export default function OnboardPage() {
             <input type="email" placeholder="you@example.com" value={form.admin_email} onChange={(e) => setForm({ ...form, admin_email: e.target.value })} className="input-field" />
           </div>
 
-          <button type="submit" disabled={loading} className="btn-primary w-full mt-6 disabled:opacity-50">
-            {loading ? "Setting up..." : "Complete Setup →"}
+          <button type="submit" disabled={loading} className="btn-primary w-full mt-6 disabled:opacity-50 flex items-center justify-center gap-2">
+            {loading ? "Setting up..." : (
+              <>
+                Complete Setup <ArrowRight size={16} />
+              </>
+            )}
           </button>
         </form>
       </div>

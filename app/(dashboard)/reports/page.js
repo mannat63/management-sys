@@ -93,6 +93,16 @@ export default function ReportsPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      <div className="print:hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="page-title">{role === "ADMIN" ? "Operational Intelligence" : "Academic Performance Report"}</h1>
+          <p className="page-subtitle">
+            {role === "ADMIN" 
+              ? "Comprehensive analysis of revenue, attendance, and academic trends."
+              : "Review your progress, attendance, and scores for the selected period."}
+          </p>
+        </div>
+      </div>
       
       {/* ─── FILTERS ─── */}
       <div className="print:hidden card flex flex-col md:flex-row gap-4 items-end justify-between">

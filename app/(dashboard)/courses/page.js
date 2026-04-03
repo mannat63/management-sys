@@ -45,8 +45,8 @@ export default function CoursesPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="page-title">Courses</h1>
-          <p className="page-subtitle">{courses.length} course{courses.length !== 1 ? "s" : ""} available</p>
+          <h1 className="page-title">Curriculum Management</h1>
+          <p className="page-subtitle">{courses.length} educational program{courses.length !== 1 ? "s" : ""} currently available.</p>
         </div>
         <button onClick={() => setShowForm(!showForm)} className={`btn-primary ${showForm ? "bg-gray-500 hover:bg-gray-600 !shadow-none" : ""}`}>
           {showForm ? <><X size={16}/> Cancel</> : <><Plus size={16}/> Add Course</>}

@@ -156,8 +156,12 @@ export default function BatchesPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="page-title">Batches</h1>
-          <p className="page-subtitle">Manage class timings and assign teachers to courses.</p>
+          <h1 className="page-title">{role === "TEACHER" ? "My Batches" : "Batches Management"}</h1>
+          <p className="page-subtitle">
+            {role === "TEACHER" 
+              ? "View and manage your assigned class schedules and students."
+              : "Organize class timings, monitor enrollment, and assign faculty."}
+          </p>
         </div>
         {role === "ADMIN" && (
           <button

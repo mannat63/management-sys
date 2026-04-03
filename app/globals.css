@@ -210,6 +210,535 @@
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* ═══════════════════════════════════════════════════════════════
+   LOGIN PAGE — Matches reference design (split layout + card)
+   ═══════════════════════════════════════════════════════════════ */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  background: #f2f2f2;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Left Panel ── */
+.login-left {
+  flex: 1.2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 40px;
+  background: linear-gradient(145deg, #1e293b 0%, #0f172a 60%, #1a1a2e 100%);
+  overflow: hidden;
+}
+
+/* ── Left Panel Content ── */
+.login-left-brand {
+  position: absolute;
+  top: 48px;
+  left: 48px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.login-left-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: white;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.login-left-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.login-left-name {
+  font-size: 20px;
+  font-weight: 800;
+  color: white;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.login-left-sub {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  margin-top: 8px;
+}
+
+.login-illustration-wrapper {
+  position: relative;
+  width: 94%;
+  max-width: 680px;
+  height: auto;
+  aspect-ratio: 16/10;
+  z-index: 10;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 40px;
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.4);
+}
+
+/* Design around elements */
+.login-illustration-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -16px;
+  left: -16px;
+  right: -16px;
+  bottom: -16px;
+  border: 2px solid rgba(255, 255, 255, 0.03);
+  border-radius: 50px;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.login-illustration-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 40px;
+  right: -20px;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+  z-index: -1;
+  filter: blur(20px);
+}
+
+.login-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 32px;
+  filter: brightness(0.85);
+  transition: all 0.5s ease;
+}
+
+.login-hero-img:hover {
+  filter: brightness(1);
+  transform: scale(1.01);
+}
+
+/* Feature styles removed (unnecessary) */
+
+.login-left-feature {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.5);
+  transition: color 0.3s;
+}
+
+.login-left-feature:hover {
+  color: rgba(255,255,255,0.9);
+}
+
+.login-feat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Mobile brand (hidden on desktop) ── */
+.login-brand-mobile {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  justify-content: center;
+}
+
+.login-brand-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #eee;
+  flex-shrink: 0;
+}
+
+.login-brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.login-brand-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.2;
+}
+
+.login-brand-tagline {
+  font-size: 8px;
+  font-weight: 600;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.login-illustration-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+}
+
+.login-hero-img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 20px 60px rgba(0, 0, 0, 0.3));
+  animation: loginFloat 6s ease-in-out infinite;
+}
+
+.login-float-circle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.15;
+}
+
+.login-float-1 {
+  width: 180px;
+  height: 180px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  top: -40px;
+  right: -30px;
+  animation: loginPulse 4s ease-in-out infinite;
+  opacity: 0.12;
+}
+
+.login-float-2 {
+  width: 140px;
+  height: 140px;
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
+  bottom: -20px;
+  left: -30px;
+  animation: loginPulse 5s ease-in-out infinite reverse;
+  opacity: 0.1;
+}
+
+.login-float-star {
+  position: absolute;
+  top: 12%;
+  left: 8%;
+  color: #818cf8;
+  font-size: 24px;
+  animation: loginSpin 8s linear infinite;
+  opacity: 0.4;
+}
+
+/* ── Right Panel ── */
+.login-right {
+  flex: 0.8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  position: relative;
+  background: white;
+}
+
+/* ── Login Card ── */
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: white;
+  border-radius: 28px;
+  padding: 40px 36px 36px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  position: relative;
+  z-index: 10;
+  animation: loginCardIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Avatar Section ── */
+.login-avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.login-avatar-ring {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 3px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  transition: all 0.6s ease;
+  overflow: hidden;
+}
+
+.login-avatar-inner {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.login-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.login-role-name {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.login-role-desc {
+  font-size: 13px;
+  color: #888;
+  text-align: center;
+  max-width: 280px;
+  line-height: 1.5;
+  font-weight: 500;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 40px;
+}
+
+.login-role-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.login-role-dot {
+  height: 8px;
+  border-radius: 100px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0;
+}
+
+.login-role-dot:hover {
+  opacity: 0.8;
+}
+
+/* ── Divider ── */
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.login-divider-line {
+  flex: 1;
+  height: 1px;
+  background: #e8e8e8;
+}
+
+.login-divider-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: #bbb;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── Google Sign In Button ── */
+.login-google-btn {
+  width: 100%;
+  padding: 14px 24px;
+  background: white;
+  border: 2px solid #e8e8e8;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+  letter-spacing: 0.01em;
+}
+
+.login-google-btn:hover {
+  border-color: #4285F4;
+  box-shadow: 0 4px 16px rgba(66, 133, 244, 0.15);
+  background: #fafbff;
+  transform: translateY(-1px);
+}
+
+.login-google-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.1);
+}
+
+/* ── Note ── */
+.login-note {
+  text-align: center;
+  font-size: 11px;
+  color: #b0b0b0;
+  margin-top: 16px;
+  font-weight: 500;
+}
+
+/* ── Branding ── */
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #f0f0f0;
+  justify-content: center;
+}
+
+.login-brand-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #eee;
+  flex-shrink: 0;
+}
+
+.login-brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.login-brand-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.2;
+}
+
+.login-brand-tagline {
+  font-size: 9px;
+  font-weight: 600;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+/* ── Help Center Link ── */
+.login-help {
+  position: fixed;
+  top: 24px;
+  right: 28px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  text-decoration: none;
+  border: 1px solid #ddd;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: white;
+  transition: all 0.2s;
+  z-index: 50;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.login-help:hover {
+  color: #333;
+  border-color: #bbb;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* ── Animations ── */
+@keyframes loginFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+@keyframes loginPulse {
+  0%, 100% { transform: scale(1); opacity: 0.15; }
+  50% { transform: scale(1.15); opacity: 0.25; }
+}
+
+@keyframes loginSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes loginCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Mobile Responsive ── */
+@media (max-width: 900px) {
+  .login-page {
+    flex-direction: column;
+  }
+
+  .login-left {
+    display: none;
+  }
+
+  .login-right {
+    flex: unset;
+    min-height: 100vh;
+    padding: 24px 20px;
+  }
+
+  .login-card {
+    max-width: 100%;
+    padding: 32px 24px 28px;
+    border-radius: 20px;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1200px) {
+  .login-illustration-wrapper {
+    max-width: 380px;
+  }
+
+  .login-card {
+    max-width: 380px;
+    padding: 32px 28px 28px;
+  }
+}
+
 /* ─── Print Styles ─── */
 @media print {
   @page {

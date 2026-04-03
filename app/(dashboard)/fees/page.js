@@ -477,8 +477,12 @@ export default function FeesPage() {
       {/* ─ Header ─ */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="page-title">Fees Management</h1>
-          <p className="page-subtitle">Click any student card to view their full fee timeline.</p>
+          <h1 className="page-title">{role === "STUDENT" ? "My Fee Summary" : "Fees Management"}</h1>
+          <p className="page-subtitle">
+            {role === "STUDENT"
+              ? "View your fee timeline, payment history and upcoming dues."
+              : "Click any student card to view their full fee timeline."}
+          </p>
         </div>
         {role === "ADMIN" && (
           <div className="flex items-center gap-3">

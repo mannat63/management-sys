@@ -2,7 +2,7 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 
 export const metadata = {
-  title: "Alpha Coaching — Institute Management",
+  title: "Alpha Coaching | Academic Excellence",
   description: "A modern management platform for coaching institutes. Track students, fees, attendance, and results with ease.",
 };
 

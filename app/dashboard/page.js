@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { LayoutDashboard, Users, UserPlus, FileText, Calendar, Wallet, Bell, Target, TrendingUp, AlertTriangle, ArrowUpRight, ChevronRight, Activity } from "lucide-react";
-import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 
-const COLORS = ['#10b981', '#ef4444', '#3b82f6', '#f59e0b'];
+const COLORS = ['#10b981', '#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+const BAR_COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899'];
 
 export default function DashboardPage() {
   const [stats, setStats] = useState(null);
@@ -120,8 +121,16 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="page-title">Dashboard Overview</h1>
-          <p className="page-subtitle">Institutional metrics and operational status at a glance.</p>
+          <h1 className="page-title">
+            {stats?.role === "ADMIN" ? "Management Dashboard" : 
+             stats?.role === "TEACHER" ? "Faculty Portal" : 
+             "Student Dashboard"}
+          </h1>
+          <p className="page-subtitle">
+            {stats?.role === "ADMIN" ? "Comprehensive institutional metrics and operational status." :
+             stats?.role === "TEACHER" ? "Track your batches, attendance, and student performance." :
+             "Overview of your academic progress and upcoming schedules."}
+          </p>
         </div>
         {stats?.role === "ADMIN" && (
           <Link href="/reports" className="btn-primary whitespace-nowrap text-sm">
@@ -429,7 +438,12 @@ export default function DashboardPage() {
                   <XAxis type="number" fontSize={10} tickLine={false} axisLine={false} domain={[0, 100]} tickFormatter={(val) => `${val}%`} tick={{ fill: '#cbd5e1', fontWeight: 600 }} />
                   <YAxis type="category" dataKey="name" fontSize={10} tickLine={false} axisLine={false} tickMargin={15} width={110} tick={{ fill: '#475569', fontWeight: 700 }} />
                   <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: '700' }} />
-                  <Bar dataKey="avgScore" fill="#1e293b" radius={[0, 6, 6, 0]} maxBarSize={24} />
+                  <Bar dataKey="avgScore" radius={[0, 6, 6, 0]} maxBarSize={22}>
+                    {(graphs.tests || []).map((entry, index) => (
+                      <Cell key={`bar-${index}`} fill={BAR_COLORS[index % BAR_COLORS.length]} fillOpacity={0.9} />
+                    ))}
+                    <LabelList dataKey="avgScore" position="right" formatter={(v) => `${v}%`} style={{ fontSize: 11, fontWeight: 700, fill: '#475569' }} />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>

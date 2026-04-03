@@ -324,9 +324,9 @@ export default function StudentsPage() {
       {/* ─── Header ─── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="page-title">Students</h1>
+          <h1 className="page-title">Student Directory</h1>
           <p className="page-subtitle">
-            {students.length} student{students.length !== 1 ? "s" : ""} enrolled
+            {students.length} student{students.length !== 1 ? "s" : ""} currently enrolled in the institute.
             {riskType && (
               <span className="ml-2 inline-flex items-center gap-1 text-red-500 font-bold bg-red-50 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">
                 Showing {riskType} risk only

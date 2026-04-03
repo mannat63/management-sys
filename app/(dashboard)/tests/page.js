@@ -142,8 +142,12 @@ export default function TestsPage() {
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="page-title">Tests &amp; Results</h1>
-          <p className="page-subtitle">Create exams, enter student marks, and view performance.</p>
+          <h1 className="page-title">{role === "STUDENT" ? "My Test Results" : "Tests and Results"}</h1>
+          <p className="page-subtitle">
+            {role === "STUDENT"
+              ? "View all your test scores and performance records."
+              : "Create exams, enter student marks, and view performance."}
+          </p>
         </div>
         {role !== "STUDENT" && (
           <button

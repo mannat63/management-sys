@@ -13,7 +13,9 @@ export async function PUT(req, { params }) {
     const authUser = await requireRole(["ADMIN"]);
     const { id } = await params;
     const body = await req.json();
-    const { name, phoneOrEmail } = body;
+    const { name, email, phone, phoneOrEmail } = body;
+    // Support both old (phoneOrEmail) and new (email+phone) formats
+    const finalContact = email?.trim() ? email.trim() : phone?.trim() ? phone.trim() : phoneOrEmail;
 
     console.log(`Teacher Update Request: ID=${id}, Institute=${authUser.institute_id}`);
 
@@ -31,7 +33,7 @@ export async function PUT(req, { params }) {
     }
 
     // Now update the linked user
-    await User.findByIdAndUpdate(teacher.user_id, { name, phoneOrEmail });
+    await User.findByIdAndUpdate(teacher.user_id, { name, phoneOrEmail: finalContact });
 
     const updated = await Teacher.findById(id).populate("user_id", "name phoneOrEmail");
     return NextResponse.json(updated);

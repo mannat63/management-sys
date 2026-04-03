@@ -111,9 +111,11 @@ export default function TeachersPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="page-title">Teachers</h1>
+          <h1 className="page-title">{role === "STUDENT" ? "Our Faculty" : "Teachers Management"}</h1>
           <p className="page-subtitle">
-            {teachers.length} teacher{teachers.length !== 1 ? "s" : ""} on board
+            {role === "STUDENT"
+              ? "Expert faculty members dedicated to your academic success."
+              : `${teachers.length} teacher${teachers.length !== 1 ? "s" : ""} currently managing the institute.`}
           </p>
         </div>
         {role === "ADMIN" && (
