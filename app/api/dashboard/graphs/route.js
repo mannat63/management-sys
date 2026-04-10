@@ -93,10 +93,37 @@ export async function GET() {
         {
           $project: {
             name: 1,
-            total_marks: 1,
             date: 1,
+            // Calculate total marks from subjects array OR fallback to old total_marks field
+            maxPossible: {
+              $cond: [
+                { $gt: [{ $size: { $ifNull: ["$subjects", []] } }, 0] },
+                { $sum: "$subjects.max_marks" },
+                { $ifNull: ["$total_marks", 0] }
+              ]
+            },
             count: { $size: "$results" },
-            sumMarks: { $sum: "$results.marks" },
+            // Sum up all marks from results (handles both new subject_marks array and old marks field)
+            sumMarks: {
+              $sum: {
+                $map: {
+                  input: "$results",
+                  as: "r",
+                  in: {
+                    $add: [
+                      { $ifNull: ["$$r.marks", 0] },
+                      {
+                        $reduce: {
+                          input: { $ifNull: ["$$r.subject_marks", []] },
+                          initialValue: 0,
+                          in: { $add: ["$$value", { $ifNull: ["$$this.marks", 0] }] }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
           },
         },
         {
@@ -105,10 +132,10 @@ export async function GET() {
             date: 1,
             avgScore: {
               $cond: [
-                { $and: [{ $gt: ["$count", 0] }, { $gt: ["$total_marks", 0] }] },
+                { $and: [{ $gt: ["$count", 0] }, { $gt: ["$maxPossible", 0] }] },
                 {
                   $round: [
-                    { $multiply: [{ $divide: ["$sumMarks", { $multiply: ["$count", "$total_marks"] }] }, 100] },
+                    { $multiply: [{ $divide: ["$sumMarks", { $multiply: ["$count", "$maxPossible"] }] }, 100] },
                     0,
                   ],
                 },

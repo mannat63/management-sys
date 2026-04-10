@@ -6,7 +6,7 @@ import Test from "@/models/Test";
 import Student from "@/models/Student";
 import Institute from "@/models/Institute";
 import Notification from "@/models/Notification";
-import { sendEventToN8N } from "@/services/n8n";
+// import { sendEventToN8N } from "@/services/n8n";
 
 export async function POST(req) {
   try {
@@ -42,52 +42,57 @@ export async function POST(req) {
     const errors = [];
     const testDate = new Date(test.date).toLocaleDateString("en-GB");
 
+    // Pre-calculate mapping of subject max marks
+    const maxMarksMap = {};
+    if (test.subjects) {
+      test.subjects.forEach(sub => {
+        maxMarksMap[sub.name] = sub.max_marks;
+      });
+    }
+
     for (const result of results) {
       const student = result.student_id;
       const studentName = student?.user_id?.name || student?.parent_name || "Student";
-      const parentPhone = student?.parent_phone;
-
-      if (!parentPhone || parentPhone === "—") {
-        errors.push(`Skipped ${studentName}: No valid parent phone number.`);
-        continue;
-      }
+      const parentPhone = student?.parent_phone || "—";
 
       try {
-        await sendEventToN8N({
-          event_type: "test_result",
-          timestamp: new Date().toISOString(),
-          institute: {
-            id: inst?._id?.toString() || "",
-            name: inst?.name || "Institute"
-          },
-          student: {
-            id: student._id.toString(),
-            name: studentName,
-            parent_phone: parentPhone,
-            batch_name: test.batch_id?.name || "Unknown"
-          },
-          data: {
-            test_name: test.name,
-            marks: result.marks,
-            total_marks: test.total_marks
-          }
+        // Format the score message dynamically based on subjects
+        let scoreDetails = "";
+        let totalScored = 0;
+        let totalMax = 0;
+        
+        if (result.subject_marks && result.subject_marks.length > 0) {
+          scoreDetails = result.subject_marks.map(sm => {
+            totalScored += sm.marks;
+            const max = maxMarksMap[sm.subject] || 0;
+            totalMax += max;
+            return `${sm.subject}: ${sm.marks}/${max}`;
+          }).join(", ");
+        } else {
+          // Fallback if somehow there's an old scheme
+          scoreDetails = "No subjects recorded";
+        }
+
+        const messageText = `Hi, marks for test '${test.name}' are out! Total: ${totalScored}/${totalMax}. Breakdown: [${scoreDetails}].`;
+
+        // Create Individual DB notification so it shows up in Student Dashboard
+        await Notification.create({
+          institute_id: inst._id,
+          student_id: student._id,
+          type: "TEST_RESULT_ALERT",
+          recipient_name: studentName,
+          recipient_phone: parentPhone,
+          message: messageText,
+          status: "SENT"
         });
+
+        // TEMPORARILY DISABLED n8n webhook
+        // await sendEventToN8N({ ... });
 
         sentCount++;
       } catch (err) {
         errors.push(`Failed to notify ${studentName}: ${err.message}`);
       }
-    }
-
-    if (sentCount > 0) {
-      await Notification.create({
-        institute_id: inst._id,
-        type: "TEST_RESULT_ALERT",
-        recipient_name: "Class Broadcast",
-        recipient_phone: `Batch: ${test.batch_id?.name || "All"}`,
-        message: `Official test marks for '${test.name}' out of ${test.total_marks} have been successfully broadcasted directly to ${sentCount} students/parents.`,
-        status: "SENT"
-      });
     }
 
     return NextResponse.json({
@@ -96,7 +101,7 @@ export async function POST(req) {
       total: results.length,
       skipped: errors.length,
       errors,
-      message: `Successfully sent ${sentCount} score notification${sentCount !== 1 ? "s" : ""} for "${test.name}".`
+      message: `Successfully generated ${sentCount} test alerts for students inside the dashboard.`
     });
 
   } catch (error) {

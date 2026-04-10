@@ -1,8 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, Plus, X, Calendar, ClipboardList, Save, CheckCircle, Bell, Send } from "lucide-react";
+import { FileText, Plus, X, Calendar, ClipboardList, Save, CheckCircle, Bell, Send, Edit2, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
+
+const defaultSubjects = [
+  { name: "Physics", max_marks: 100 },
+  { name: "Chemistry", max_marks: 100 },
+  { name: "Maths", max_marks: 100 }
+];
 
 export default function TestsPage() {
   const [tests, setTests] = useState([]);
@@ -11,7 +17,8 @@ export default function TestsPage() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: "", batch_id: "", date: "", total_marks: "" });
+  const [form, setForm] = useState({ name: "", batch_id: "", date: "", subjects: defaultSubjects });
+  const [editingId, setEditingId] = useState(null);
   const [selectedTest, setSelectedTest] = useState(null);
   const [markForm, setMarkForm] = useState({});
   const [saving, setSaving] = useState(false);
@@ -20,35 +27,78 @@ export default function TestsPage() {
   const [modalLoading, setModalLoading] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/tests").then((r) => r.json()),
-      fetch("/api/batches").then((r) => r.json()),
-      fetch("/api/me").then((r) => r.json()),
-    ])
-      .then(([t, b, m]) => {
-        setTests(Array.isArray(t) ? t : []);
-        setBatches(Array.isArray(b) ? b : []);
-        setRole(m?.role || "STUDENT");
-      })
-      .finally(() => setLoading(false));
+    loadInitialData();
   }, []);
 
-  async function handleCreateTest(e) {
+  async function loadInitialData() {
+    setLoading(true);
+    try {
+      const [t, b, m] = await Promise.all([
+        fetch("/api/tests").then((r) => r.json()),
+        fetch("/api/batches").then((r) => r.json()),
+        fetch("/api/me").then((r) => r.json()),
+      ]);
+      setTests(Array.isArray(t) ? t : []);
+      setBatches(Array.isArray(b) ? b : []);
+      setRole(m?.role || "STUDENT");
+    } catch (err) {
+      toast.error("Failed to load data");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCreateOrUpdateTest(e) {
     e.preventDefault();
-    const res = await fetch("/api/tests", {
-      method: "POST",
+    if (!form.subjects || form.subjects.length === 0) {
+      return toast.error("Please add at least one subject.");
+    }
+
+    const url = editingId ? `/api/tests/${editingId}` : "/api/tests";
+    const method = editingId ? "PUT" : "POST";
+
+    const res = await fetch(url, {
+      method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
+
     if (res.ok) {
-      toast.success("Test created successfully");
+      toast.success(editingId ? "Test updated successfully" : "Test created successfully");
       setShowForm(false);
-      setForm({ name: "", batch_id: "", date: "", total_marks: "" });
+      setEditingId(null);
+      setForm({ name: "", batch_id: "", date: "", subjects: defaultSubjects });
       const updated = await fetch("/api/tests").then((r) => r.json());
       setTests(Array.isArray(updated) ? updated : []);
     } else {
       const err = await res.json();
-      toast.error(err.error || "Failed to create test");
+      toast.error(err.error || "Failed to save test");
+    }
+  }
+
+  function handleEditClick(test) {
+    setEditingId(test._id);
+    setForm({
+      name: test.name,
+      batch_id: test.batch_id?._id || test.batch_id,
+      date: new Date(test.date).toISOString().split("T")[0],
+      subjects: test.subjects || defaultSubjects
+    });
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function handleDeleteTest(testId) {
+    if (!confirm("Are you sure you want to delete this test? All student marks for this test will be permanently lost.")) return;
+
+    const res = await fetch(`/api/tests/${testId}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success("Test deleted successfully");
+      setTests(tests.filter(t => t._id !== testId));
+      if (selectedTest?._id === testId) closeModal();
+    } else {
+      const err = await res.json();
+      toast.error(err.error || "Failed to delete test");
     }
   }
 
@@ -65,7 +115,13 @@ export default function TestsPage() {
     const marks = {};
     if (Array.isArray(r)) {
       r.forEach((res) => {
-        marks[res.student_id?._id || res.student_id] = res.marks;
+        const subjectScores = {};
+        if (res.subject_marks) {
+          res.subject_marks.forEach(sm => {
+            subjectScores[sm.subject] = sm.marks;
+          });
+        }
+        marks[res.student_id?._id || res.student_id] = subjectScores;
       });
     }
     setMarkForm(marks);
@@ -83,18 +139,22 @@ export default function TestsPage() {
     setSaving(true);
     try {
       const saves = Object.entries(markForm)
-        .filter(([, v]) => v !== undefined && v !== "")
-        .map(([studentId, marks]) =>
-          fetch("/api/results", {
+        .filter(([, subjectScores]) => Object.keys(subjectScores || {}).length > 0)
+        .map(([studentId, subjectScores]) => {
+          const subject_marks = Object.entries(subjectScores).map(([subject, marks]) => ({
+            subject,
+            marks: Number(marks),
+          }));
+          return fetch("/api/results", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               test_id: selectedTest._id,
               student_id: studentId,
-              marks: Number(marks),
+              subject_marks,
             }),
-          })
-        );
+          });
+        });
 
       await Promise.all(saves);
       toast.success("Marks saved successfully");
@@ -151,7 +211,15 @@ export default function TestsPage() {
         </div>
         {role !== "STUDENT" && (
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              if (showForm) {
+                setShowForm(false);
+                setEditingId(null);
+                setForm({ name: "", batch_id: "", date: "", subjects: defaultSubjects });
+              } else {
+                setShowForm(true);
+              }
+            }}
             className={`btn-primary ${showForm ? "bg-gray-500 hover:bg-gray-600 !shadow-none" : ""}`}
           >
             {showForm ? (
@@ -169,9 +237,16 @@ export default function TestsPage() {
 
       {showForm && (
         <form
-          onSubmit={handleCreateTest}
+          onSubmit={handleCreateOrUpdateTest}
           className="card bg-gray-50/50 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
         >
+          <div className="sm:col-span-2 lg:col-span-4 flex items-center gap-2 mb-2">
+             <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                {editingId ? <Edit2 size={16}/> : <Plus size={16}/>}
+             </div>
+             <h2 className="text-base font-bold text-gray-800">{editingId ? "Edit Test Details" : "Create New Exam"}</h2>
+          </div>
+
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
               Test Name
@@ -202,7 +277,7 @@ export default function TestsPage() {
               ))}
             </select>
           </div>
-          <div>
+          <div className="sm:col-span-2">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
               Date
             </label>
@@ -211,25 +286,78 @@ export default function TestsPage() {
               required
               value={form.date}
               onChange={(e) => setForm({ ...form, date: e.target.value })}
-              className="input-field"
+              className="input-field leading-normal"
             />
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-              Total Marks
-            </label>
-            <input
-              type="number"
-              placeholder="e.g. 100"
-              required
-              value={form.total_marks}
-              onChange={(e) => setForm({ ...form, total_marks: e.target.value })}
-              className="input-field"
-            />
+          
+          <div className="sm:col-span-2 lg:col-span-4 mt-2">
+            <div className="flex items-center justify-between mb-3 border-b border-gray-200 pb-2">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Subjects & Max Marks
+              </label>
+              <button 
+                type="button" 
+                onClick={() => setForm({...form, subjects: [...form.subjects, {name: "", max_marks: 100}]})}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md"
+              >
+                <Plus size={12} /> Add Subject
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {form.subjects.map((sub, idx) => (
+                <div key={idx} className="flex gap-3 items-center">
+                  <div className="flex-1">
+                    <input 
+                      placeholder="Subject Name (e.g. Physics)" 
+                      required 
+                      value={sub.name} 
+                      onChange={(e) => { 
+                        const newSubs = [...form.subjects]; 
+                        newSubs[idx].name = e.target.value; 
+                        setForm({...form, subjects: newSubs}); 
+                      }} 
+                      className="input-field" 
+                    />
+                  </div>
+                  <div className="w-32">
+                    <input 
+                      type="number" 
+                      placeholder="Max Marks" 
+                      required 
+                      min={1}
+                      value={sub.max_marks} 
+                      onChange={(e) => { 
+                        const newSubs = [...form.subjects]; 
+                        newSubs[idx].max_marks = Number(e.target.value); 
+                        setForm({...form, subjects: newSubs}); 
+                      }} 
+                      className="input-field" 
+                    />
+                  </div>
+                  <button 
+                    type="button" 
+                    onClick={() => { 
+                      const newSubs = form.subjects.filter((_, i) => i !== idx); 
+                      setForm({...form, subjects: newSubs}); 
+                    }} 
+                    className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-md transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
+              {form.subjects.length === 0 && (
+                <div className="text-center py-4 bg-gray-100/50 rounded-lg text-xs text-gray-400 font-medium italic border border-dashed border-gray-200">
+                  No subjects added. Add at least one to save.
+                </div>
+              )}
+            </div>
           </div>
-          <div className="sm:col-span-2 lg:col-span-4 flex justify-end">
+
+          <div className="sm:col-span-2 lg:col-span-4 flex justify-end mt-4 pt-4 border-t border-gray-100">
             <button type="submit" className="btn-primary">
-              <CheckCircle size={15} /> Save Test
+              <CheckCircle size={15} /> {editingId ? "Update Test" : "Save Test"}
             </button>
           </div>
         </form>
@@ -239,48 +367,82 @@ export default function TestsPage() {
       <div>
         <h2 className="section-heading mb-4">Recent Tests</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
-          {tests.map((t) => (
-            <div
-              key={t._id}
-              onClick={() => openResults(t)}
-              className="card cursor-pointer transition-all hover:shadow-md hover:ring-2 hover:ring-slate-200"
-            >
-              <div className="flex items-start gap-3 mb-4">
-                <div className="p-2 rounded-md bg-slate-100 text-slate-600 transition-colors">
-                  <FileText size={18} strokeWidth={2.5} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-bold text-gray-800 text-base leading-tight truncate">{t.name}</div>
-                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
-                    {t.batch_id?.name || "—"}
+          {tests.map((t) => {
+            const totalMaxMarks = t.subjects?.reduce((sum, s) => sum + (s.max_marks || 0), 0) || 0;
+            return (
+              <div
+                key={t._id}
+                onClick={() => openResults(t)}
+                className="card cursor-pointer transition-all hover:shadow-md hover:ring-2 hover:ring-slate-200 group relative"
+              >
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="p-2 rounded-md bg-slate-100 text-slate-600 transition-colors">
+                    <FileText size={18} strokeWidth={2.5} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-gray-800 text-base leading-tight truncate">{t.name}</div>
+                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                      {t.batch_id?.name || "—"}
+                    </div>
                   </div>
                 </div>
+
+                {/* Edit/Delete Floating Actions */}
+                {role !== "STUDENT" && (
+                   <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleEditClick(t); }}
+                        className="p-1.5 bg-white border border-gray-200 rounded-md text-gray-500 hover:text-blue-600 hover:border-blue-200 shadow-sm transition-colors"
+                        title="Edit Test"
+                      >
+                        <Edit2 size={13}/>
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleDeleteTest(t._id); }}
+                        className="p-1.5 bg-white border border-gray-200 rounded-md text-gray-500 hover:text-red-600 hover:border-red-200 shadow-sm transition-colors"
+                        title="Delete Test"
+                      >
+                        <Trash2 size={13}/>
+                      </button>
+                   </div>
+                )}
+
+                <div className="flex flex-col gap-2 pt-3 border-t border-gray-100 border-dashed">
+                  <div className="flex items-center justify-between text-sm font-medium">
+                    <span className="flex items-center text-gray-500 text-xs">
+                      <Calendar size={13} className="mr-1.5" />
+                      {new Date(t.date).toLocaleDateString()}
+                    </span>
+                    <span className="flex items-center text-gray-500 text-xs font-bold">
+                      <ClipboardList size={13} className="mr-1.5" />
+                      {totalMaxMarks} Marks
+                    </span>
+                  </div>
+                  <div className="text-[10px] items-center flex gap-1.5 text-gray-400 font-bold uppercase tracking-wider truncate">
+                    {t.subjects?.map((s, i) => (
+                       <span key={i} className="flex items-center gap-1">
+                          {s.name} <span className="text-[8px] opacity-60">({s.max_marks})</span>
+                          {i < t.subjects.length - 1 && <span className="opacity-30">|</span>}
+                       </span>
+                    ))}
+                  </div>
+                </div>
+                {(role === "ADMIN" || role === "TEACHER") && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      notifyParents(t._id);
+                    }}
+                    disabled={!!notifyingTestId}
+                    className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 text-[11px] font-bold uppercase tracking-wider rounded-md transition-colors disabled:opacity-50"
+                  >
+                    <Bell size={13} />
+                    {notifyingTestId === t._id ? "Sending..." : "Notify Parents"}
+                  </button>
+                )}
               </div>
-              <div className="flex items-center justify-between text-sm font-medium pt-3 border-t border-gray-100 border-dashed">
-                <span className="flex items-center text-gray-500 text-xs">
-                  <Calendar size={13} className="mr-1.5" />
-                  {new Date(t.date).toLocaleDateString()}
-                </span>
-                <span className="flex items-center text-gray-500 text-xs">
-                  <ClipboardList size={13} className="mr-1.5" />
-                  {t.total_marks} Marks
-                </span>
-              </div>
-              {(role === "ADMIN" || role === "TEACHER") && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    notifyParents(t._id);
-                  }}
-                  disabled={!!notifyingTestId}
-                  className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 text-xs font-medium rounded-md transition-colors disabled:opacity-50"
-                >
-                  <Bell size={13} />
-                  {notifyingTestId === t._id ? "Sending..." : "Notify Parents"}
-                </button>
-              )}
-            </div>
-          ))}
+            );
+          })}
           {tests.length === 0 && (
             <div className="col-span-full py-16 text-center border-2 border-dashed border-gray-200 rounded-lg">
               <FileText size={32} className="mx-auto text-gray-300 mb-3" />
@@ -299,7 +461,7 @@ export default function TestsPage() {
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
             style={{ animation: "slideDown 250ms cubic-bezier(0.16,1,0.3,1)" }}
           >
             {/* Modal Header */}
@@ -310,7 +472,7 @@ export default function TestsPage() {
                   {selectedTest.name}
                 </h2>
                 <p className="text-sm text-gray-500 mt-0.5">
-                  Batch: {selectedTest.batch_id?.name || "—"} &nbsp;·&nbsp; Max: {selectedTest.total_marks} marks
+                  Batch: {selectedTest.batch_id?.name || "—"} &nbsp;·&nbsp; Total Max: {selectedTest.subjects?.reduce((sum, s) => sum + (s.max_marks || 0), 0) || 0} marks
                 </p>
               </div>
               <button
@@ -322,57 +484,126 @@ export default function TestsPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="overflow-y-auto flex-1">
+            <div className="overflow-x-auto overflow-y-auto flex-1 h-full min-h-[300px]">
               {modalLoading ? (
                 <div className="flex items-center justify-center py-20">
                   <div className="h-8 w-8 rounded-full border-2 border-slate-300 border-t-slate-600 animate-spin" />
                 </div>
+              ) : role === "STUDENT" ? (
+                <div className="px-6 py-5">
+                  {students.map((s) => {
+                    const totalScored = selectedTest.subjects?.reduce((sum, sub) => sum + Number(markForm[s._id]?.[sub.name] || 0), 0) || 0;
+                    const overallMax = selectedTest.subjects?.reduce((sum, sub) => sum + (sub.max_marks || 0), 0) || 0;
+                    const pct = overallMax > 0 ? ((totalScored / overallMax) * 100).toFixed(1) : 0;
+                    
+                    return (
+                       <div key={s._id}>
+                         {/* Scorecard Table */}
+                         <table className="w-full border-collapse">
+                           <thead>
+                             <tr className="border-b-2 border-slate-200">
+                               <th className="text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider py-3 px-4">Subject</th>
+                               <th className="text-right text-[11px] font-bold text-slate-500 uppercase tracking-wider py-3 px-4 w-28">Max Marks</th>
+                               <th className="text-right text-[11px] font-bold text-slate-500 uppercase tracking-wider py-3 px-4 w-28">Obtained</th>
+                             </tr>
+                           </thead>
+                           <tbody>
+                             {selectedTest.subjects?.map((sub, idx) => {
+                               const obtained = markForm[s._id]?.[sub.name];
+                               const hasMarks = obtained !== undefined && obtained !== "";
+                               return (
+                                 <tr key={idx} className={`border-b border-slate-100 ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/50"} hover:bg-slate-50 transition-colors`}>
+                                   <td className="py-3.5 px-4 text-sm font-semibold text-slate-800">{sub.name}</td>
+                                   <td className="py-3.5 px-4 text-sm text-right text-slate-400 font-mono tabular-nums">{sub.max_marks}</td>
+                                   <td className="py-3.5 px-4 text-right">
+                                     <span className={`text-sm font-bold font-mono tabular-nums ${hasMarks ? "text-slate-900" : "text-slate-300"}`}>
+                                       {hasMarks ? obtained : "—"}
+                                     </span>
+                                   </td>
+                                 </tr>
+                               );
+                             })}
+                           </tbody>
+                           <tfoot>
+                             <tr className="border-t-2 border-slate-300 bg-slate-800">
+                               <td className="py-3.5 px-4 text-sm font-bold text-white uppercase tracking-wide">Total</td>
+                               <td className="py-3.5 px-4 text-sm text-right text-slate-400 font-mono font-bold tabular-nums">{overallMax}</td>
+                               <td className="py-3.5 px-4 text-right">
+                                 <span className="text-lg font-black text-white font-mono tabular-nums">{totalScored}</span>
+                               </td>
+                             </tr>
+                           </tfoot>
+                         </table>
+
+                         {/* Percentage Strip */}
+                         <div className="mt-4 flex items-center justify-between px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg">
+                           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Score Percentage</span>
+                           <span className={`text-lg font-black font-mono tabular-nums ${Number(pct) >= 60 ? "text-emerald-600" : Number(pct) >= 33 ? "text-amber-600" : "text-red-600"}`}>
+                             {pct}%
+                           </span>
+                         </div>
+
+                         {/* Report Issue */}
+                         <div className="mt-5 pt-4 flex justify-end border-t border-slate-100">
+                            <a href="https://wa.me/919509728788?text=I%20want%20to%20report%20an%20issue%20with%20my%20test%20marks" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-200 rounded-md bg-white text-slate-500 text-[11px] uppercase tracking-wider font-bold hover:bg-slate-50 hover:border-slate-300 hover:text-slate-700 transition-all">
+                              Report Issue
+                            </a>
+                         </div>
+                       </div>
+                    );
+                  })}
+                </div>
               ) : (
-                <table className="data-table">
+                <table className="data-table min-w-full whitespace-nowrap">
                   <thead>
                     <tr>
-                      <th className="w-2/3">Student Name</th>
-                      <th>Marks Scored</th>
+                      <th className="sticky left-0 bg-gray-50 border-r border-gray-200">Student Name</th>
+                      {selectedTest.subjects?.map((sub, idx) => (
+                        <th key={idx} className="text-center">{sub.name} <br/><span className="text-[10px] text-gray-400 font-normal">Max: {sub.max_marks}</span></th>
+                      ))}
+                      <th className="text-center bg-gray-50 bg-opacity-50 border-l border-gray-200">Total</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {students.map((s) => (
-                      <tr key={s._id}>
-                        <td className="font-semibold text-gray-700">
-                          {s.user_id?.name || s.parent_name}
-                        </td>
-                        <td>
-                          {role !== "STUDENT" ? (
-                            <>
-                              <input
-                                type="number"
-                                max={selectedTest.total_marks}
-                                min={0}
-                                value={markForm[s._id] ?? ""}
-                                onChange={(e) =>
-                                  setMarkForm({ ...markForm, [s._id]: e.target.value })
-                                }
-                                className="w-24 px-3 py-1.5 border border-gray-200 rounded-md text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-slate-500/15 focus:border-slate-400 transition-all font-mono"
-                                placeholder="0"
-                              />
-                              <span className="text-gray-400 font-medium text-xs ml-2">
-                                / {selectedTest.total_marks}
-                              </span>
-                            </>
-                          ) : (
-                            <span className="font-mono text-gray-800 font-bold bg-gray-50 px-3 py-1 rounded-lg border border-gray-100">
-                              {markForm[s._id] !== undefined ? markForm[s._id] : "—"}
-                              <span className="text-gray-400 font-medium text-xs ml-1">
-                                / {selectedTest.total_marks}
-                              </span>
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                    {students.map((s) => {
+                      const totalScored = selectedTest.subjects?.reduce((sum, sub) => sum + Number(markForm[s._id]?.[sub.name] || 0), 0) || 0;
+                      const overallMax = selectedTest.subjects?.reduce((sum, sub) => sum + (sub.max_marks || 0), 0) || 0;
+
+                      return (
+                        <tr key={s._id}>
+                          <td className="font-semibold text-gray-700 sticky left-0 bg-white border-r border-gray-50 shadow-[1px_0_0_0_#f3f4f6]">
+                            {s.user_id?.name || s.parent_name}
+                          </td>
+                          {selectedTest.subjects?.map((sub, idx) => (
+                            <td key={idx} className="text-center bg-white">
+                              <div className="flex items-center justify-center">
+                                <input
+                                  type="number"
+                                  max={sub.max_marks}
+                                  min={0}
+                                  value={markForm[s._id]?.[sub.name] ?? ""}
+                                  onChange={(e) =>
+                                    setMarkForm({ 
+                                      ...markForm, 
+                                      [s._id]: { ...(markForm[s._id] || {}), [sub.name]: e.target.value } 
+                                    })
+                                  }
+                                  className="w-16 px-2 py-1 text-center border border-gray-300 rounded-md text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400 transition-all font-mono shadow-sm"
+                                  placeholder="—"
+                                />
+                              </div>
+                            </td>
+                          ))}
+                          <td className="text-center bg-gray-50/30 border-l border-gray-100 font-mono text-sm">
+                            <span className="font-bold text-gray-800">{totalScored}</span>
+                            <span className="text-gray-400 text-xs ml-1">/ {overallMax}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                     {students.length === 0 && (
                       <tr>
-                        <td colSpan={2} className="py-10 text-center text-gray-500 font-medium bg-gray-50/50">
+                        <td colSpan={(selectedTest.subjects?.length || 0) + 2} className="py-10 text-center text-gray-500 font-medium bg-gray-50/50">
                           No students enrolled in this batch.
                         </td>
                       </tr>

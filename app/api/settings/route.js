@@ -29,6 +29,7 @@ export async function POST(req) {
     } else {
       if (body.feeReminders !== undefined) settings.feeReminders = body.feeReminders;
       if (body.attendanceAlerts !== undefined) settings.attendanceAlerts = body.attendanceAlerts;
+      if (body.razorpay_link !== undefined) settings.razorpay_link = body.razorpay_link;
       await settings.save();
     }
 

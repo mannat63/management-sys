@@ -12,6 +12,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState(null);
   const [insights, setInsights] = useState(null);
   const [graphs, setGraphs] = useState(null);
+  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,21 +23,28 @@ export default function DashboardPage() {
     try {
       const baseData = await fetch("/api/dashboard").then((r) => r.json()).catch(() => ({}));
       
-      const fetchers = [
+      let extraDataPromise = Promise.resolve(null);
+      if (baseData?.role === "ADMIN" || baseData?.role === "TEACHER") {
+        extraDataPromise = fetch("/api/dashboard/summary").then(r => r.ok ? r.json() : {});
+      } else if (baseData?.role === "STUDENT") {
+        extraDataPromise = fetch("/api/notifications").then(r => r.ok ? r.json() : []);
+      }
+
+      const [attRisk, feeRisk, perfRisk, graphData, extraData] = await Promise.all([
         fetch("/api/insights/attendance-risk").then(r => r.ok ? r.json() : null).catch(() => null),
         fetch("/api/insights/fee-defaulters").then(r => r.ok ? r.json() : null).catch(() => null),
         fetch("/api/insights/performance-risk").then(r => r.ok ? r.json() : null).catch(() => null),
-        fetch("/api/dashboard/graphs").then(r => r.ok ? r.json() : null).catch(() => null)
-      ];
+        fetch("/api/dashboard/graphs").then(r => r.ok ? r.json() : null).catch(() => null),
+        extraDataPromise
+      ]);
 
-      // ONLY fetch global summary for Admin/Teacher
-      if (baseData?.role === "ADMIN" || baseData?.role === "TEACHER") {
-        fetchers.push(fetch("/api/dashboard/summary").then(r => r.ok ? r.json() : {}));
+      if (baseData?.role === "STUDENT") {
+        setStats(baseData);
+        setNotifications(Array.isArray(extraData) ? extraData : []);
+      } else {
+        setStats({ ...baseData, ...(extraData || {}) });
       }
 
-      const [attRisk, feeRisk, perfRisk, graphData, summary] = await Promise.all(fetchers);
-
-      setStats({ ...baseData, ...(summary || {}) });
       
       const mappedInsights = {};
       // ... (rest of logic remains same, but filtered by role in JSX)
@@ -449,6 +457,85 @@ export default function DashboardPage() {
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* ─── STUDENT NOTIFICATIONS ─── */}
+      {isStudent && (
+        <div className="card p-6 border-slate-200 mt-6">
+          <h3 className="section-heading mb-6 text-slate-800 font-bold pb-4 border-b border-slate-50 flex items-center gap-2">
+            <Bell size={16} className="text-slate-400" />
+            Recent Alerts & Notifications
+          </h3>
+          <div className="space-y-4">
+            {notifications.length > 0 ? (
+              notifications.map((notif, index) => {
+                const isFee = notif.type === "FEE_REMINDER";
+                const isTest = notif.type === "TEST_RESULT_ALERT";
+                const isAttendance = notif.type === "ATTENDANCE_ALERT";
+                const isReport = notif.type === "REPORT_CARD";
+                const showPayNow = isFee;
+                const showReportIssue = isTest || isAttendance || isReport;
+                
+                const iconColorMap = {
+                  "FEE_REMINDER": "bg-amber-100 text-amber-600",
+                  "TEST_RESULT_ALERT": "bg-purple-100 text-purple-600",
+                  "ATTENDANCE_ALERT": "bg-red-100 text-red-600",
+                  "REPORT_CARD": "bg-blue-100 text-blue-600",
+                };
+                const borderMap = {
+                  "FEE_REMINDER": "border-amber-100 bg-amber-50/20",
+                  "TEST_RESULT_ALERT": "border-purple-100 bg-purple-50/20",
+                  "ATTENDANCE_ALERT": "border-red-100 bg-red-50/20",
+                  "REPORT_CARD": "border-blue-100 bg-blue-50/20",
+                };
+
+                return (
+                  <div key={index} className={`p-4 border rounded-xl shadow-sm transition hover:shadow-md ${borderMap[notif.type] || "border-slate-100 bg-slate-50/20"}`}>
+                    <div className="flex items-start gap-4">
+                      <div className={`mt-0.5 p-2 rounded-lg shrink-0 ${iconColorMap[notif.type] || "bg-slate-100 text-slate-600"}`}>
+                        <Bell size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-slate-900 text-sm mb-1">{notif.type.replace(/_/g, " ")}</h4>
+                        <p className="text-slate-600 text-sm leading-relaxed">{notif.message}</p>
+                        <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest">{new Date(notif.created_at || new Date()).toLocaleString()}</p>
+                      </div>
+                    </div>
+                    {/* CTA Buttons */}
+                    {(showPayNow || showReportIssue) && (
+                      <div className="mt-3 pt-3 border-t border-black/5 flex items-center justify-end gap-2">
+                        {showPayNow && (
+                          <a 
+                            href={notif.action_link || "/fees"}
+                            target={notif.action_link ? "_blank" : "_self"}
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-bold uppercase tracking-wider rounded-md transition-colors shadow-sm"
+                          >
+                            Pay Now
+                          </a>
+                        )}
+                        {showReportIssue && (
+                          <a 
+                            href="https://wa.me/919509728788?text=I%20want%20to%20report%20an%20issue%20with%20my%20records"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-200 bg-white text-slate-600 text-[11px] font-bold uppercase tracking-wider rounded-md hover:bg-slate-50 hover:border-slate-300 transition-all"
+                          >
+                            Report Issue
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-10 text-slate-400 font-medium text-sm border-2 border-dashed border-slate-100 rounded-xl">
+                No recent notifications found.
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

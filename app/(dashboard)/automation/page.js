@@ -54,9 +54,9 @@ export default function AutomationPage() {
       <div>
         <h1 className="page-title flex items-center gap-3">
           <Settings className="text-slate-600" size={22} />
-          System Settings & Automation
+          Settings
         </h1>
-        <p className="page-subtitle mt-1">Manage system resets and check the automation roadmap.</p>
+        <p className="page-subtitle mt-1">Manage system configuration, payment links, and data controls.</p>
       </div>
 
       <div className="space-y-4">
@@ -132,6 +132,49 @@ export default function AutomationPage() {
             >
               Seed Demo Data (10 Students)
             </button>
+          </div>
+        </div>
+
+        {/* Razorpay Setup */}
+        <div className="card mb-4 border-blue-50">
+          <div className="flex items-center gap-4 mb-5">
+            <div className="p-2.5 bg-blue-100 text-blue-600 rounded-md">
+              <Send size={20} />
+            </div>
+            <div>
+              <div className="font-semibold text-gray-800">Razorpay Payment Link</div>
+              <div className="text-sm text-gray-500 mt-0.5">Attach your Razorpay link for fee reminders</div>
+            </div>
+          </div>
+          <div className="pl-16">
+            <div className="flex items-center gap-3">
+              <input
+                type="url"
+                placeholder="https://rzp.io/..."
+                value={settings?.razorpay_link || ""}
+                onChange={(e) => setSettings({...settings, razorpay_link: e.target.value})}
+                className="input-field flex-1 bg-white border border-gray-200"
+              />
+              <button
+                onClick={async () => {
+                  const id = toast.loading("Saving link...");
+                  try {
+                    const res = await fetch("/api/settings", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ razorpay_link: settings.razorpay_link }),
+                    });
+                    if (res.ok) toast.success("Saved!", { id });
+                    else toast.error("Failed", { id });
+                  } catch (e) {
+                    toast.error("Error saving", { id });
+                  }
+                }}
+                className="btn-primary whitespace-nowrap"
+              >
+                Save Link
+              </button>
+            </div>
           </div>
         </div>
 

@@ -22,7 +22,31 @@ export async function GET(req) {
       {
         $project: {
            student_id: 1,
-           percentage: { $multiply: [{ $divide: ["$marks", "$testInfo.total_marks"] }, 100] }
+           totalScore: { 
+             $add: [
+               { $ifNull: ["$marks", 0] },
+               { $sum: "$subject_marks.marks" }
+             ]
+           },
+           totalMax: {
+             $cond: [
+               { $gt: [{ $size: { $ifNull: ["$testInfo.subjects", []] } }, 0] },
+               { $sum: "$testInfo.subjects.max_marks" },
+               { $ifNull: ["$testInfo.total_marks", 0] }
+             ]
+           }
+        }
+      },
+      {
+        $project: {
+           student_id: 1,
+           percentage: { 
+             $cond: [
+               { $gt: ["$totalMax", 0] },
+               { $multiply: [{ $divide: ["$totalScore", "$totalMax"] }, 100] },
+               0
+             ]
+           }
         }
       },
       {

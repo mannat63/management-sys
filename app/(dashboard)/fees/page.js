@@ -548,25 +548,27 @@ export default function FeesPage() {
       )}
 
       {/* ─ Search + Filter ─ */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div className="relative flex-1 max-w-xs">
-          <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
-          <input
-            placeholder="Search student…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="input-field pl-9 !py-2 text-sm"
-          />
+      {role !== "STUDENT" && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="relative flex-1 max-w-xs">
+            <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
+            <input
+              placeholder="Search student…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="input-field pl-9 !py-2 text-sm"
+            />
+          </div>
+          <div className="flex bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
+            {[["ALL", "All"], ["OVERDUE", "Overdue"], ["UPCOMING", "Upcoming"], ["CLEAR", "Clear"]].map(([val, lbl]) => (
+              <button key={val} onClick={() => setFilter(val)}
+                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${filter === val ? "bg-slate-700 text-white shadow-md" : "text-gray-500 hover:bg-gray-50"}`}>
+                {lbl}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
-          {[["ALL", "All"], ["OVERDUE", "Overdue"], ["UPCOMING", "Upcoming"], ["CLEAR", "Clear"]].map(([val, lbl]) => (
-            <button key={val} onClick={() => setFilter(val)}
-              className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${filter === val ? "bg-slate-700 text-white shadow-md" : "text-gray-500 hover:bg-gray-50"}`}>
-              {lbl}
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
 
       {/* ─ Student Cards Grid ─ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

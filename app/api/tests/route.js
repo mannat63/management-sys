@@ -51,7 +51,7 @@ export async function GET(req) {
 
     // Sort newest first, project only needed fields
     const tests = await Test.find(query)
-      .select("name batch_id date total_marks")
+      .select("name batch_id date subjects")
       .populate("batch_id", "name")
       .sort({ date: -1 })
       .limit(50)
@@ -70,7 +70,7 @@ export async function POST(req) {
     const authUser = await requireRole(["ADMIN", "TEACHER"]);
 
     const body = await req.json();
-    const { name, batch_id, date, total_marks } = body;
+    const { name, batch_id, date, subjects } = body;
 
     if (authUser.role === "TEACHER") {
       const teacher = await Teacher.findOne(
@@ -95,7 +95,7 @@ export async function POST(req) {
       name,
       batch_id,
       date,
-      total_marks,
+      subjects,
       institute_id: authUser.institute_id,
     });
 

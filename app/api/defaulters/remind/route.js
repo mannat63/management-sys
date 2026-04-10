@@ -25,6 +25,10 @@ export async function POST(req) {
     let sentCount = 0;
     const errors = [];
     const inst = await Institute.findById(authUser.institute_id);
+    
+    const { default: Settings } = await import("@/models/Settings");
+    const settings = await Settings.findOne({ institute_id: authUser.institute_id }).lean();
+    const razorpay_link = settings?.razorpay_link || "";
 
     for (const fee of fees) {
       if (!fee.parent_phone || fee.parent_phone === "—") {
@@ -51,7 +55,8 @@ export async function POST(req) {
           data: {
             due_amount: fee.due_amount,
             due_date: new Date(new Date().setDate(new Date().getDate() - fee.days_overdue)).toLocaleDateString("en-CA"), // fallback approximate date
-            days_overdue: fee.days_overdue
+            days_overdue: fee.days_overdue,
+            payment_link: razorpay_link
           }
         });
         
@@ -61,7 +66,7 @@ export async function POST(req) {
           type: "FEE_REMINDER",
           recipient_name: fee.name,
           recipient_phone: fee.parent_phone,
-          message: `Dear Parent, reminder from ${inst.name}: outstanding fees of ₹${fee.due_amount} for ${fee.name} are overdue by ${fee.days_overdue} days. Please clear them.`,
+          message: `Dear Parent, reminder from ${inst.name}: outstanding fees of ₹${fee.due_amount} for ${fee.name} are overdue by ${fee.days_overdue} days. Please clear them. ${razorpay_link ? `Pay here: ${razorpay_link}` : ''}`,
           status: "SENT"
         });
         

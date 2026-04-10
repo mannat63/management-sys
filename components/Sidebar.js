@@ -15,8 +15,7 @@ const adminLinks = [
   { href: "/attendance-calendar", label: "Calendar", Icon: Calendar },
   { href: "/tests", label: "Tests & Results", Icon: FileText },
   { href: "/reports", label: "Reports", Icon: PieChart },
-  { href: "#notifications", label: "Notifications Logs", Icon: Bell },
-  { href: "/automation", label: "Automation & Settings", Icon: Settings },
+  { href: "/automation", label: "Settings", Icon: Settings },
 ];
 
 const teacherLinks = [
@@ -96,17 +95,19 @@ export default function Sidebar({ role, userName, onClose, onOpenNotification })
       </nav>
 
       {/* Help */}
-      <div className="px-3 pb-2 flex-shrink-0">
-        <a
-          href="https://wa.me/919509728788?text=Hi%2C%20I%20need%20help%20with%20Alpha%20Coaching%20System"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium text-gray-400 hover:text-[#1e3a5f] hover:bg-blue-50/50 transition-all duration-150"
-        >
-          <HelpCircle size={16} strokeWidth={1.8} />
-          <span>Help & Support</span>
-        </a>
-      </div>
+      {role !== "STUDENT" && (
+        <div className="px-3 pb-2 flex-shrink-0">
+          <a
+            href="https://wa.me/919509728788?text=Hi%2C%20I%20need%20help%20with%20Alpha%20Coaching%20System"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium text-gray-400 hover:text-[#1e3a5f] hover:bg-blue-50/50 transition-all duration-150"
+          >
+            <HelpCircle size={16} strokeWidth={1.8} />
+            <span>Help & Support</span>
+          </a>
+        </div>
+      )}
 
       {/* User Info */}
       <div className="p-3 border-t border-gray-100 flex-shrink-0">

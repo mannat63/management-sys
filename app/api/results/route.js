@@ -58,8 +58,8 @@ export async function GET(req) {
 
     // Project only what UI needs; use lean() for plain objects
     const results = await Result.find(query)
-      .select("test_id student_id marks")
-      .populate("test_id", "name date total_marks batch_id")
+      .select("test_id student_id subject_marks")
+      .populate("test_id", "name date subjects batch_id")
       .populate("student_id", "user_id parent_name")
       .lean();
 
@@ -76,7 +76,7 @@ export async function POST(req) {
     const authUser = await requireRole(["ADMIN", "TEACHER"]);
 
     const body = await req.json();
-    const { test_id, student_id, marks } = body;
+    const { test_id, student_id, subject_marks } = body;
 
     if (authUser.role === "TEACHER") {
       const teacher = await Teacher.findOne(
@@ -102,7 +102,7 @@ export async function POST(req) {
 
     const result = await Result.findOneAndUpdate(
       { test_id, student_id, institute_id: authUser.institute_id },
-      { marks },
+      { subject_marks },
       { new: true, upsert: true }
     );
 

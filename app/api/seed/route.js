@@ -149,18 +149,48 @@ export async function POST(req) {
     }
 
     // 7. Tests & Results
-    const testJEE = await Test.create({ name: "JEE Mock Test 1", batch_id: batchJEE._id, date: new Date(), total_marks: 300, institute_id: iid });
-    const testNEET = await Test.create({ name: "NEET Mock Test 1", batch_id: batchNEET._id, date: new Date(), total_marks: 720, institute_id: iid });
+    const testJEE = await Test.create({ 
+      name: "JEE Mock Test 1", 
+      batch_id: batchJEE._id, 
+      date: new Date(), 
+      subjects: [
+        { name: "Physics", max_marks: 100 },
+        { name: "Chemistry", max_marks: 100 },
+        { name: "Maths", max_marks: 100 }
+      ],
+      institute_id: iid 
+    });
+
+    const testNEET = await Test.create({ 
+      name: "NEET Mock Test 1", 
+      batch_id: batchNEET._id, 
+      date: new Date(), 
+      subjects: [
+        { name: "Physics", max_marks: 180 },
+        { name: "Chemistry", max_marks: 180 },
+        { name: "Bio", max_marks: 360 }
+      ],
+      institute_id: iid 
+    });
 
     for (let i = 0; i < students.length; i++) {
       const student = students[i];
       const isJEE = student.batch_id.toString() === batchJEE._id.toString();
-      const mark = isJEE ? Math.floor(Math.random() * 200 + 40) : Math.floor(Math.random() * 500 + 100);
+      
+      const subject_marks = isJEE ? [
+        { subject: "Physics", marks: Math.floor(Math.random() * 80 + 20) },
+        { subject: "Chemistry", marks: Math.floor(Math.random() * 80 + 20) },
+        { subject: "Maths", marks: Math.floor(Math.random() * 80 + 20) }
+      ] : [
+        { subject: "Physics", marks: Math.floor(Math.random() * 140 + 40) },
+        { subject: "Chemistry", marks: Math.floor(Math.random() * 140 + 40) },
+        { subject: "Bio", marks: Math.floor(Math.random() * 300 + 60) }
+      ];
       
       await Result.create({ 
         test_id: isJEE ? testJEE._id : testNEET._id, 
         student_id: student._id, 
-        marks: mark, 
+        subject_marks,
         institute_id: iid 
       });
     }

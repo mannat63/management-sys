@@ -9,6 +9,28 @@ import Result from "@/models/Result";
 import Batch from "@/models/Batch";
 import Institute from "@/models/Institute";
 
+/**
+ * Compute total marks from a result document.
+ * Supports both new subject_marks array and legacy flat marks field.
+ */
+function getResultMarks(result) {
+    if (result.subject_marks && result.subject_marks.length > 0) {
+        return result.subject_marks.reduce((sum, sm) => sum + (sm.marks || 0), 0);
+    }
+    return result.marks || 0;
+}
+
+/**
+ * Compute max possible marks from a test document.
+ * Supports both new subjects array and legacy total_marks field.
+ */
+function getTestMaxMarks(test) {
+    if (test.subjects && test.subjects.length > 0) {
+        return test.subjects.reduce((sum, s) => sum + (s.max_marks || 0), 0);
+    }
+    return test.total_marks || 0;
+}
+
 export async function GET(req) {
   try {
     await dbConnect();
@@ -84,22 +106,28 @@ export async function GET(req) {
     
     const testDetails = myResults.map(r => {
         const testObj = tests.find(t => t._id.toString() === r.test_id?.toString());
+        const scored = getResultMarks(r);
+        const maxMarks = testObj ? getTestMaxMarks(testObj) : 0;
+
         if (testObj) {
-            marksScored += (r.marks || 0);
-            marksTotal += (testObj.total_marks || 0);
+            marksScored += scored;
+            marksTotal += maxMarks;
         }
         
-        // Calculate specific test rank
-        const testOthers = allResults.filter(ar => ar.test_id?.toString() === testObj?._id?.toString());
-        testOthers.sort((a, b) => b.marks - a.marks);
+        // Calculate specific test rank using the same scoring method
+        const testOthers = allResults
+          .filter(ar => ar.test_id?.toString() === testObj?._id?.toString())
+          .map(ar => ({ student_id: ar.student_id, scored: getResultMarks(ar) }));
+        
+        testOthers.sort((a, b) => b.scored - a.scored);
         const rank = testOthers.findIndex(a => a.student_id?.toString() === sId.toString()) + 1;
 
         return {
             test_name: testObj?.name || "Unknown",
             date: testObj?.date,
-            marks: r.marks || 0,
-            total_marks: testObj?.total_marks || 0,
-            percentage: testObj?.total_marks ? ((r.marks / testObj.total_marks) * 100).toFixed(1) : 0,
+            marks: scored,
+            total_marks: maxMarks,
+            percentage: maxMarks > 0 ? ((scored / maxMarks) * 100).toFixed(1) : 0,
             rank: rank > 0 ? rank : "N/A"
         };
     });

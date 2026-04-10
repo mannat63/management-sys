@@ -84,9 +84,38 @@ export default function NotificationPanel({ isOpen, onClose }) {
                        {new Date(n.created_at).toLocaleDateString()}
                      </div>
                   </div>
-                  <p className="text-xs text-slate-700 font-medium leading-relaxed">
+                  <p className="text-xs text-slate-700 font-medium leading-relaxed mb-2">
                     {n.message}
                   </p>
+                  {(() => {
+                    const isFee = n.type === 'FEE_REMINDER';
+                    const isAcademic = n.type === 'TEST_RESULT_ALERT' || n.type === 'ATTENDANCE_ALERT' || n.type === 'REPORT_CARD';
+                    if (!isFee && !isAcademic) return null;
+                    return (
+                      <div className="mt-2 pt-2 border-t border-black/5 flex justify-end">
+                        {isFee && (
+                          <a 
+                            href={n.action_link || "/fees"}
+                            target={n.action_link ? "_blank" : "_self"}
+                            rel="noopener noreferrer"
+                            className="text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded flex items-center gap-1 transition-all shadow-sm bg-slate-800 hover:bg-slate-900 text-white"
+                          >
+                            Pay Now
+                          </a>
+                        )}
+                        {isAcademic && (
+                          <a 
+                            href="https://wa.me/919509728788?text=I%20want%20to%20report%20an%20issue%20with%20my%20records"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded flex items-center gap-1 transition-all border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                          >
+                            Report Issue
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })
@@ -96,3 +125,4 @@ export default function NotificationPanel({ isOpen, onClose }) {
     </>
   );
 }
+
