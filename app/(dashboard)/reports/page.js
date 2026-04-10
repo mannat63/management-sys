@@ -9,8 +9,14 @@ export default function ReportsPage() {
   const [batches, setBatches] = useState([]);
   
   const today = new Date();
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
-  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split("T")[0];
+  const getLocalDateString = (d) => {
+     const year = d.getFullYear();
+     const month = String(d.getMonth() + 1).padStart(2, '0');
+     const day = String(d.getDate()).padStart(2, '0');
+     return `${year}-${month}-${day}`;
+  };
+  const firstDay = getLocalDateString(new Date(today.getFullYear(), today.getMonth(), 1));
+  const lastDay = getLocalDateString(new Date(today.getFullYear(), today.getMonth() + 1, 0));
 
   const [dateFrom, setDateFrom] = useState(firstDay);
   const [dateTo, setDateTo] = useState(lastDay);
@@ -85,7 +91,30 @@ export default function ReportsPage() {
     window.location.href = `/api/reports/export/csv?${params.toString()}`;
   }
 
-  function handlePrintPDF() {
+  async function handlePrintPDF() {
+    // Check if on mobile or if we should use html2pdf
+    if (typeof window !== "undefined") {
+      try {
+        const html2pdf = (await import("html2pdf.js")).default;
+        const element = document.getElementById("report-content-to-print");
+        if (element) {
+          const opt = {
+            margin: 0.3,
+            filename: `Report_${dateFrom}_to_${dateTo}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+          };
+          toast.loading("Generating PDF...", { id: "pdf-toast" });
+          await html2pdf().set(opt).from(element).save();
+          toast.success("PDF Downloaded!", { id: "pdf-toast" });
+          return;
+        }
+      } catch (e) {
+        console.error("PDF generation failed via html2pdf, falling back to window.print", e);
+        toast.dismiss("pdf-toast");
+      }
+    }
     window.print();
   }
 
@@ -151,6 +180,7 @@ export default function ReportsPage() {
       {loading && <div className="h-64 animate-shimmer rounded-lg"></div>}
 
       {/* ─── PRINT HEADER ─── */}
+      <div id="report-content-to-print" className="space-y-6">
       <div className="hidden print:block text-center border-b-2 border-gray-800 pb-4 mb-6">
         <h1 className="text-2xl font-bold text-gray-900 uppercase tracking-wide">Institute Report</h1>
         <p className="text-sm font-medium text-gray-600 mt-1">Period: {new Date(dateFrom).toLocaleDateString()} to {new Date(dateTo).toLocaleDateString()}</p>
@@ -371,6 +401,7 @@ export default function ReportsPage() {
 
         </div>
       )}
+      </div>
     </div>
   );
 }
