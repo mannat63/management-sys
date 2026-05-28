@@ -6,6 +6,7 @@
 // TODO: Replace hardcoded role logic with DB-based roles
 export const ROLE_MAP = {
   "coachman9606@gmail.com": "ADMIN",
+  "teamintellogy@gmail.com": "ADMIN",
   "mannatgoyal27102005@gmail.com": "TEACHER",
   "campervictor52@gmail.com": "STUDENT",
   "hackareg07@gmail.com": "STUDENT",
